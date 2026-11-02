@@ -5,7 +5,9 @@ plugins {
 }
 
 base {
-	archivesName = providers.gradleProperty("archives_base_name")
+	// A plain value, not a lazy provider: Kotlin derives its module name from this,
+	// and a lazy chain would capture the Project and break the configuration cache.
+	archivesName = providers.gradleProperty("archives_base_name").get()
 }
 
 loom {
