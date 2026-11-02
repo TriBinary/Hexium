@@ -44,6 +44,11 @@ The built mod is `mod/build/libs/hexium-<version>.jar`. The version comes only f
 
 ## Working with Claude Code
 
+- `CLAUDE.md` holds the project rules every session reads. Agents for each area live in `.claude/agents/` (`core-engineer`, `fabric-client`, `ui-editor`, `server`, `reviewer`).
+- `.claude/settings.json` lets agents run Gradle and read git freely, blocks `git commit`, `git push`, `git tag` and `gh pr create`, and asks before `rm -rf` or edits to `server/deploy/` and `.github/workflows/`.
+- A Stop hook (`.claude/hooks/core-tests.sh`) runs `./gradlew :core:test` whenever `core/` has uncommitted changes, and sends failures back to the agent before it finishes.
+- Personal overrides go in `.claude/settings.local.json`, which git ignores.
+
 ### The task loop
 
 1. Start a fresh session (`/clear`) and give one task from the milestone list, pointing at the spec sections it depends on.
