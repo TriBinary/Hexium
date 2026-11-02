@@ -1,0 +1,75 @@
+# Development
+
+How to build, run and work on Hexium. For what Hexium is and how it plays, see [DESIGN.md](DESIGN.md); for how the code is organised, see [ARCHITECTURE.md](ARCHITECTURE.md).
+
+## Requirements
+
+- JDK 25
+- IntelliJ IDEA (import the folder as a Gradle project)
+- Git
+
+The Gradle wrapper downloads the right Gradle version, and Loom downloads Minecraft on the first build, so the first sync takes a while.
+
+## Project layout
+
+| Path | What it is |
+| --- | --- |
+| `core/` | Plain Kotlin: chart model, timing, judge, scoring, replays. No Minecraft code. |
+| `mod/` | The Fabric mod. `src/client` holds almost everything (Hexium is client-only); mixins are Java in `src/client/java`. |
+| `server/` | The online server (from Milestone 7). |
+| `tools/` | Command-line tools: chart lint, replay re-judge. |
+| `docs/` | Design, specs and developer docs (upper-case file names). |
+| `CHANGELOG.md` | Player-facing change log, see [RELEASING.md](RELEASING.md). |
+
+## Commands
+
+| Command | Does |
+| --- | --- |
+| `./gradlew build` | Builds every module and runs all tests |
+| `./gradlew :mod:runClient` | Starts Minecraft with Hexium in a dev environment |
+| `./gradlew :core:test` | Runs only the judge and chart tests (fast) |
+| `./gradlew :tools:run --args="lint docs/examples"` | Lints example charts (once the linter exists) |
+| `./gradlew :server:run` | Runs the server locally (from Milestone 7) |
+
+The built mod is `mod/build/libs/hexium-<version>.jar`. The version comes only from `mod_version` in `gradle.properties`.
+
+## Making changes
+
+- Work on your fork and send changes to the organization repository by pull request. CI must pass.
+- Commit messages follow [COMMIT_STRUCTURE.md](COMMIT_STRUCTURE.md).
+- Every Feature, Improvement or Fix adds an entry under `## Unreleased` in `CHANGELOG.md`, in the same commit ([RELEASING.md](RELEASING.md) has the format).
+- After every change, check which documents it affects and update them in the same change.
+- `README.md` is for players only. Build steps, architecture and workflow belong in `docs/`.
+- Never change `mod_version` or create tags unless you mean to release: see [RELEASING.md](RELEASING.md).
+
+## Working with Claude Code
+
+- `CLAUDE.md` holds the project rules every session reads. Agents for each area live in `.claude/agents/` (`core-engineer`, `fabric-client`, `ui-editor`, `server`, `reviewer`).
+- `.claude/settings.json` lets agents run Gradle and read git freely, blocks `git commit`, `git push`, `git tag` and `gh pr create`, and asks before `rm -rf` or edits to `server/deploy/` and `.github/workflows/`.
+- A Stop hook (`.claude/hooks/core-tests.sh`) runs `./gradlew :core:test` whenever `core/` has uncommitted changes, and sends failures back to the agent before it finishes.
+- Personal overrides go in `.claude/settings.local.json`, which git ignores.
+
+### The task loop
+
+1. Start a fresh session (`/clear`) and give one task from the milestone list, pointing at the spec sections it depends on.
+2. Use plan mode first. Read the plan; correct design misunderstandings before any code is written.
+3. The agent changes files in the working tree only. It never commits, pushes or opens PRs. For parallel work, create a separate git worktree per task yourself, and never run two agents in the same module at once.
+4. The agent runs the tests, calls `reviewer`, fixes what it finds, adds the changelog entry, and checks every document the change affects and updates it. It ends with a summary (verified / needs playtest / docs updated) and the commit message for the change in a code block, written by docs/COMMIT_STRUCTURE.md. For a long task, it does this after each phase.
+5. You review the diff and playtest using the milestone's checklist. Then you commit with the proposed message (edit it if you like), push to your fork and open a PR into TriBinary/Hexium. Or file the feel problems as the next task.
+
+Parallel lanes that work well: after Milestone 1, `server` can build auth and chart storage while `fabric-client` builds the playable prototype. Both depend only on `core`.
+
+### Test strategy
+
+- **`core` unit tests:** one file of synthetic input per rule in `docs/JUDGEMENT.md`. For example: "tap 20 ms late → Justice Critical", "hold released 120 ms before a tick → Attack on that tick", "slide with crosshair outside radius → Miss on those ticks", "flick too slow → no hit".
+- **Golden replays:** recorded replays with their known scores live in `core/src/test/resources`. Any change to the judge must keep them identical, or update them on purpose in the same PR.
+- **Property tests (jqwik):** shifting every input by the judgement offset B leaves the score unchanged when B is set to match. Results never depend on frame rate (re-sample aim at 60 / 144 / 360 FPS and get the same score within tolerance).
+- **Fabric client game tests:** the title button opens the menu; the menu loads the stage; joining a normal singleplayer world creates no session; a short chart plays to the results screen with autoplay.
+- **Human playtest checklist per milestone:** offset calibration feels right; no drift after a 3-minute song; ground track readable while aiming at the corners; hold, slide and flick feel fair.
+
+### Example task prompts
+
+- *"Read docs/CHART_FORMAT.md. Implement the chart model, JSON parser and validator in `core`, test-first. Cover every validator rule with a passing and a failing example. No Minecraft code."*
+- *"Read docs/JUDGEMENT.md. Implement the judge for ground tap and hold (head + ticks) in `core`. Input is a list of timestamped key events; output is a list of judgements. Write the tests from the rules section first."*
+- *"Milestone 2, task 3: implement the audio clock in `mod`. Stream OGG with stb_vorbis into our own OpenAL source and expose songTimeMs() as described in the Audio and clock section. Add a debug overlay with drift vs AL_SAMPLE_OFFSET. Check every LWJGL/Minecraft call against the 26.3 sources."*
+- *"Plan only: propose how the editor's undo/redo command system should look, with the list of commands for Milestone 6. Don't write code yet."*
