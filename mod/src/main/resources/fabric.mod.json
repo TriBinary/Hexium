@@ -1,0 +1,38 @@
+{
+	"schemaVersion": 1,
+	"id": "hexium",
+	"version": "${version}",
+	"name": "Hexium",
+	"description": "A rhythm game inside Minecraft: play notes on a 4-lane track with the keyboard and catch sky notes with the mouse.",
+	"authors": [
+		"Trilleo"
+	],
+	"contact": {
+		"sources": "https://github.com/TriBinary/Hexium",
+		"issues": "https://github.com/TriBinary/Hexium/issues"
+	},
+	"license": "GPL-3.0-only",
+	"icon": "assets/hexium/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			{
+				"value": "net.trilleo.hexium.client.HexiumClient",
+				"adapter": "kotlin"
+			}
+		]
+	},
+	"mixins": [
+		{
+			"config": "hexium.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*",
+		"fabric-language-kotlin": "*"
+	}
+}

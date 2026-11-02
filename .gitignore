@@ -1,0 +1,46 @@
+# Gradle
+.gradle/
+build/
+out/
+classes/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Fabric / Loom dev runs
+run/
+remappedSrc/
+
+# Kotlin
+.kotlin/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Eclipse / VS Code
+bin/
+.classpath
+.project
+.settings/
+.factorypath
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and crash reports
+*.log
+logs/
+crash-reports/
+
+# Local secrets and environment
+.env
+.env.*
+!.env.example
+*.pem
+
+# Claude Code: shared settings are committed, personal ones are not
+.claude/settings.local.json
