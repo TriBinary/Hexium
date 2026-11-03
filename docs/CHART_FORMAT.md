@@ -73,7 +73,7 @@ Difficulties are `BASIC`, `ADVANCED`, `EXPERT` and `MASTER`.
 
 `ease` is `linear`, `in`, `out` or `inOut`. It shapes the segment leaving that point, so the last point's `ease` is ignored (but still required).
 
-Unknown fields are ignored with a warning, so a chart written for a later version of the same format still loads.
+Optional fields are left out when unused, not set to `null`. Unknown fields are ignored with a warning, so a chart with extra fields still loads. JSON nested more than 32 levels deep is rejected.
 
 Hold and slide tick rates are not part of the chart. They're fixed in `JudgementConfig` (see [JUDGEMENT.md](JUDGEMENT.md)).
 

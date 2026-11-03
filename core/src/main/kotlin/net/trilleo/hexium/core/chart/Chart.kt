@@ -11,7 +11,12 @@ enum class Difficulty { BASIC, ADVANCED, EXPERT, MASTER }
 enum class SkyButton { L, R }
 
 /** Shapes the slide segment leaving a point. */
-enum class Ease { LINEAR, IN, OUT, IN_OUT }
+enum class Ease(val id: String) {
+	LINEAR("linear"),
+	IN("in"),
+	OUT("out"),
+	IN_OUT("inOut"),
+}
 
 /** One `<difficulty>.json` file. */
 data class DifficultyChart(
@@ -74,7 +79,10 @@ data class ChartMeta(
 
 data class License(val type: LicenseType, val source: String?)
 
-enum class LicenseType { ORIGINAL, PERMITTED }
+enum class LicenseType(val id: String) {
+	ORIGINAL("original"),
+	PERMITTED("permitted"),
+}
 
 /** The chart data of a `.hexium` package: its `meta.json` and every difficulty file. */
 data class ChartPackage(val meta: ChartMeta, val charts: List<DifficultyChart>)
