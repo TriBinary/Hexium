@@ -173,6 +173,53 @@ class ChartParserTest {
 	}
 
 	@Test
+	fun closingBracketsFirstDoNotHideDeepNesting() {
+		val text = "]".repeat(100) + "[".repeat(100)
+		assertSingleError(ChartParser.parseDifficulty(text), IssueCode.INVALID_JSON, "$")
+	}
+
+	@Test
+	fun aLeadingByteOrderMarkIsIgnored() {
+		val result = ChartParser.parseDifficulty("\uFEFF" + specExample)
+		assertEquals(emptyList(), result.issues)
+		assertNotNull(result.value)
+	}
+
+	@Test
+	fun numbersOutsideJsonsGrammarAreRejected() {
+		for (bad in listOf("0.5f", "0.5D", "0x1p-1", ".5", "1.", "+0.5", "00.5")) {
+			assertSingleError(
+				ChartParser.parseDifficulty(chartWithNote("""{ "type": "flick", "t": [1,0,1], "x": $bad, "y": 0, "size": 1 }""")),
+				IssueCode.WRONG_TYPE,
+				"notes[0].x",
+			)
+		}
+		for (bad in listOf("01", "+1", "0x1")) {
+			assertSingleError(
+				ChartParser.parseDifficulty(chartWithNote("""{ "type": "tap", "t": [1,0,1], "lane": $bad }""")),
+				IssueCode.WRONG_TYPE,
+				"notes[0].lane",
+			)
+			assertSingleError(
+				ChartParser.parseDifficulty(chartWithNote("""{ "type": "tap", "t": [$bad,0,1], "lane": 0 }""")),
+				IssueCode.WRONG_TYPE,
+				"notes[0].t",
+			)
+		}
+	}
+
+	@Test
+	fun numbersInJsonsGrammarAreRead() {
+		val values = listOf("0" to 0.0, "1.5" to 1.5, "-0.5" to -0.5, "1e-2" to 0.01, "1E2" to 100.0, "2.5e+1" to 25.0)
+		for ((text, value) in values) {
+			val note = ChartParser.parseDifficulty(
+				chartWithNote("""{ "type": "flick", "t": [1,0,1], "x": $text, "y": 0, "size": 1 }"""),
+			).value?.notes?.single() as Note.Flick
+			assertEquals(value, note.x, text)
+		}
+	}
+
+	@Test
 	fun rootMustBeAnObject() {
 		assertSingleError(ChartParser.parseDifficulty("[]"), IssueCode.WRONG_TYPE, "$")
 	}

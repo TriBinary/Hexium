@@ -13,11 +13,12 @@ class TimingMap(offsetMs: Double, bpm: List<BpmChange>) {
 	private val msPerBeat = DoubleArray(bpm.size)
 
 	init {
+		require(offsetMs.isFinite()) { "Offset is not finite" }
 		require(bpm.isNotEmpty()) { "BPM list is empty" }
 		for (i in bpm.indices) {
 			val change = bpm[i]
 			require(change.t.isValid) { "BPM entry $i has an invalid time" }
-			require(change.bpm > 0.0) { "BPM entry $i is not above 0" }
+			require(isUsableBpm(change.bpm)) { "BPM entry $i is not a finite number above 0 with a finite beat length" }
 			startBeat[i] = change.t.toDouble()
 			msPerBeat[i] = MS_PER_MINUTE / change.bpm
 			if (i == 0) {
@@ -33,12 +34,20 @@ class TimingMap(offsetMs: Double, bpm: List<BpmChange>) {
 	fun beatToMs(beat: Beat): Double = beatToMs(beat.toDouble())
 
 	fun beatToMs(beat: Double): Double {
-		var i = startBeat.size - 1
-		while (i > 0 && beat < startBeat[i]) i--
-		return startMs[i] + (beat - startBeat[i]) * msPerBeat[i]
+		// Binary search for the last segment starting at or before this beat.
+		var low = 0
+		var high = startBeat.size - 1
+		while (low < high) {
+			val middle = (low + high + 1) ushr 1
+			if (startBeat[middle] <= beat) low = middle else high = middle - 1
+		}
+		return startMs[low] + (beat - startBeat[low]) * msPerBeat[low]
 	}
 
-	private companion object {
-		const val MS_PER_MINUTE = 60000.0
+	internal companion object {
+		private const val MS_PER_MINUTE = 60000.0
+
+		/** Very small values pass "above 0" but make a beat infinitely long, which turns times into NaN. */
+		fun isUsableBpm(bpm: Double): Boolean = bpm > 0.0 && bpm.isFinite() && (MS_PER_MINUTE / bpm).isFinite()
 	}
 }

@@ -59,6 +59,22 @@ class TimingMapTest {
 	}
 
 	@Test
+	fun lookupsFindTheRightSegmentInALongList() {
+		val changes = List(1001) { bpm(it, 120.0) }
+		val map = TimingMap(0.0, changes)
+		for (whole in listOf(0, 1, 2, 499, 500, 501, 999, 1000, 1001, 5000)) {
+			assertEquals(whole * 500.0, map.beatToMs(Beat(whole, 0, 1)), tolerance)
+			assertEquals(whole * 500.0 + 250.0, map.beatToMs(Beat(whole, 1, 2)), tolerance)
+		}
+	}
+
+	@Test
+	fun beatsBeforeZeroContinueTheFirstTempo() {
+		val map = TimingMap(1000.0, listOf(bpm(0, 120.0), bpm(4, 60.0)))
+		assertEquals(500.0, map.beatToMs(-1.0), tolerance)
+	}
+
+	@Test
 	fun doubleBeatMatchesExactBeat() {
 		val map = TimingMap(120.0, listOf(bpm(0, 174.0), bpm(64, 87.0)))
 		assertEquals(map.beatToMs(Beat(65, 1, 2)), map.beatToMs(65.5), tolerance)
@@ -71,5 +87,8 @@ class TimingMapTest {
 		assertFailsWith<IllegalArgumentException> { TimingMap(0.0, listOf(bpm(0, 0.0))) }
 		assertFailsWith<IllegalArgumentException> { TimingMap(0.0, listOf(bpm(0, 120.0), bpm(0, 90.0))) }
 		assertFailsWith<IllegalArgumentException> { TimingMap(0.0, listOf(BpmChange(Beat(0, 0, 0), 120.0))) }
+		assertFailsWith<IllegalArgumentException> { TimingMap(0.0, listOf(bpm(0, 1e-320))) }
+		assertFailsWith<IllegalArgumentException> { TimingMap(0.0, listOf(bpm(0, Double.POSITIVE_INFINITY))) }
+		assertFailsWith<IllegalArgumentException> { TimingMap(Double.NaN, listOf(bpm(0, 120.0))) }
 	}
 }

@@ -19,6 +19,7 @@ The Gradle wrapper downloads the right Gradle version, and Loom downloads Minecr
 | `server/` | The online server (from Milestone 7). |
 | `tools/` | Command-line tools: chart lint, replay re-judge. |
 | `docs/` | Design, specs and developer docs (upper-case file names). |
+| `docs/examples/` | Hand-written example charts in the writer's layout, used as test fixtures. |
 | `CHANGELOG.md` | Player-facing change log, see [RELEASING.md](RELEASING.md). |
 
 ## Commands

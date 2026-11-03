@@ -73,7 +73,7 @@ Difficulties are `BASIC`, `ADVANCED`, `EXPERT` and `MASTER`.
 
 `ease` is `linear`, `in`, `out` or `inOut`. It shapes the segment leaving that point, so the last point's `ease` is ignored (but still required).
 
-Optional fields are left out when unused, not set to `null`. Unknown fields are ignored with a warning, so a chart with extra fields still loads. JSON nested more than 32 levels deep is rejected.
+Optional fields are left out when unused, not set to `null`. Unknown fields are ignored with a warning, so a chart with extra fields still loads. JSON nested more than 32 levels deep is rejected, and numbers must follow JSON's grammar (`0.5f` and `01` are rejected). A byte-order mark at the start of a file is ignored.
 
 Hold and slide tick rates are not part of the chart. They're fixed in `JudgementConfig` (see [JUDGEMENT.md](JUDGEMENT.md)).
 
@@ -85,13 +85,13 @@ Errors:
 
 - `formatVersion` is known. `laneCount` is 4 in format v1. `level` is 1 or more.
 - Every beat time is a valid fraction (see Time and position).
-- BPM is above 0. The first BPM entry is at beat 0. BPM entries rise strictly in time.
+- `offsetMs` is finite. BPM is above 0 and finite, and small enough values that a beat's length overflows are rejected. The first BPM entry is at beat 0. BPM entries rise strictly in time.
 - The first meter entry is at beat 0. Meter entries rise strictly in time. `num` and `den` are above 0.
 - `lane` is from 0 up to `laneCount`. A hold's `end` is after its `t`.
 - Holds in the same lane don't overlap. A tap doesn't sit inside a hold in its lane. A hold covers its start up to, but not including, its end: a hold may start exactly where another ends, and a tap may sit exactly on a hold's end, but a tap on a hold's head is an error.
 - No two taps or hold heads share the same time and lane, since one press resolves at most one note. (Two holds sharing a head are reported as an overlap.)
 - Slide points rise strictly in time, with at least 2 points. All x and y values are in \[0, 1\].
-- `size` and `radius` are above 0. `dir` is from 0 up to (not including) 360.
+- `size` and `radius` are finite and above 0. `dir` is from 0 up to (not including) 360.
 - The last note ends before the audio does. The package is under 30 MiB.
 - `meta.json` follows the rules in its section above, and every chart's `difficulty` is listed in it.
 

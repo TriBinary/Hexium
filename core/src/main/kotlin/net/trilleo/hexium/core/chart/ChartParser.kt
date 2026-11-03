@@ -25,8 +25,9 @@ object ChartParser {
 
 	fun parseMeta(text: String): ParseResult<ChartMeta> = parse(text, FileReader::readMeta)
 
-	private fun <T> parse(text: String, read: FileReader.(JsonObject) -> T?): ParseResult<T> {
+	private fun <T> parse(fileText: String, read: FileReader.(JsonObject) -> T?): ParseResult<T> {
 		val reader = FileReader()
+		val text = fileText.removePrefix(BYTE_ORDER_MARK)
 		if (nestsTooDeeply(text)) {
 			reader.error(IssueCode.INVALID_JSON, ROOT, "is not valid JSON: nested more than $MAX_NESTING levels deep")
 			return ParseResult(null, reader.issues)
@@ -71,6 +72,11 @@ object ChartParser {
 private const val ROOT = "$"
 
 private const val FORMAT_VERSION = "formatVersion"
+
+private const val BYTE_ORDER_MARK = "\uFEFF"
+
+/** The JSON library and Kotlin's number parsing both accept more than JSON allows, like `0.5f` and `01`. */
+private val JSON_NUMBER = Regex("-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?")
 
 /** Far more than a chart needs (6 levels), with room for unknown fields. */
 private const val MAX_NESTING = 32
@@ -321,20 +327,23 @@ private class FileReader {
 	}
 
 	private fun intOf(element: JsonElement): Int? {
-		val primitive = element as? JsonPrimitive ?: return null
-		if (primitive.isString || primitive is JsonNull) return null
-		return primitive.intOrNull
+		return numberOf(element)?.intOrNull
 	}
 
 	private fun double(obj: JsonObject, key: String, path: String): Double? {
 		val element = child(obj, key, path) ?: return null
-		val primitive = element as? JsonPrimitive
-		val value = if (primitive == null || primitive.isString || primitive is JsonNull) null else primitive.doubleOrNull
+		val value = numberOf(element)?.doubleOrNull
 		if (value == null || !value.isFinite()) {
 			wrongType(join(path, key), "a number")
 			return null
 		}
 		return value
+	}
+
+	private fun numberOf(element: JsonElement): JsonPrimitive? {
+		val primitive = element as? JsonPrimitive ?: return null
+		if (primitive.isString || primitive is JsonNull) return null
+		return if (JSON_NUMBER.matches(primitive.content)) primitive else null
 	}
 
 	private fun string(obj: JsonObject, key: String, path: String): String? {

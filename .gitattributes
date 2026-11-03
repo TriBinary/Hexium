@@ -1,0 +1,2 @@
+# The example chart tests compare text exactly, and the spec holds examples they read.
+docs/** text eol=lf

@@ -139,6 +139,33 @@ class ChartValidatorTest {
 	}
 
 	@Test
+	fun bpmWhoseBeatLengthIsNotFiniteFails() {
+		for (bad in listOf(1e-320, Double.POSITIVE_INFINITY)) {
+			assertOnlyError(chart.copy(bpm = listOf(BpmChange(b(0), bad))), IssueCode.BPM_NOT_POSITIVE, "bpm[0].bpm")
+		}
+	}
+
+	@Test
+	fun finiteOffsetPasses() = assertValid(chart.copy(offsetMs = -250.5))
+
+	@Test
+	fun offsetThatIsNotFiniteFails() {
+		for (bad in listOf(Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY)) {
+			assertOnlyError(chart.copy(offsetMs = bad), IssueCode.OFFSET_NOT_FINITE, "offsetMs")
+		}
+	}
+
+	@Test
+	fun audioRuleIsSkippedWhenTheOffsetIsBroken() {
+		assertOnlyError(
+			chart.copy(offsetMs = Double.NaN, notes = listOf(Note.Tap(b(4), 0))),
+			IssueCode.OFFSET_NOT_FINITE,
+			"offsetMs",
+			audioDurationMs = 1.0,
+		)
+	}
+
+	@Test
 	fun firstBpmAtBeatZeroPasses() = assertValid(chart.copy(bpm = listOf(BpmChange(b(0, 0, 4), 120.0))))
 
 	@Test
@@ -353,6 +380,10 @@ class ChartValidatorTest {
 		assertOnlyError(withNotes(skyTap(b(1), size = 0.0)), IssueCode.SIZE_NOT_POSITIVE, "notes[0].size")
 		assertOnlyError(withNotes(flick(b(1), size = -1.0)), IssueCode.SIZE_NOT_POSITIVE, "notes[0].size")
 		assertOnlyError(withNotes(slide(point(b(1)), point(b(2)), radius = 0.0)), IssueCode.RADIUS_NOT_POSITIVE, "notes[0].radius")
+		for (bad in listOf(Double.NaN, Double.POSITIVE_INFINITY)) {
+			assertOnlyError(withNotes(skyTap(b(1), size = bad)), IssueCode.SIZE_NOT_POSITIVE, "notes[0].size")
+			assertOnlyError(withNotes(slide(point(b(1)), point(b(2)), radius = bad)), IssueCode.RADIUS_NOT_POSITIVE, "notes[0].radius")
+		}
 	}
 
 	@Test
@@ -364,6 +395,8 @@ class ChartValidatorTest {
 	fun dirOutOfRangeFails() {
 		assertOnlyError(withNotes(flick(b(1), dir = 360.0)), IssueCode.DIR_OUT_OF_RANGE, "notes[0].dir")
 		assertOnlyError(withNotes(flick(b(1), dir = -1.0)), IssueCode.DIR_OUT_OF_RANGE, "notes[0].dir")
+		assertOnlyError(withNotes(flick(b(1), dir = Double.NaN)), IssueCode.DIR_OUT_OF_RANGE, "notes[0].dir")
+		assertOnlyError(withNotes(flick(b(1), dir = Double.POSITIVE_INFINITY)), IssueCode.DIR_OUT_OF_RANGE, "notes[0].dir")
 	}
 
 	// The last note against the audio. At 120 BPM, beat 4 is 2000 ms.
@@ -482,6 +515,13 @@ class ChartValidatorTest {
 	@Test
 	fun oneClusterWarnsOnce() {
 		val notes = fourLanes(b(1)) + skyTap(b(1)) + skyTap(b(1, 1, 64)) + skyTap(b(1, 2, 64))
+		assertDensityWarning(chart.copy(notes = notes.toList()))
+	}
+
+	@Test
+	fun clustersSharingOneNoteWarnOnce() {
+		val shared = skyTap(b(1, 2, 64))
+		val notes = fourLanes(b(1)) + shared + fourLanes(b(1, 5, 64))
 		assertDensityWarning(chart.copy(notes = notes.toList()))
 	}
 

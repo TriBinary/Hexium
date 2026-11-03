@@ -10,3 +10,9 @@ dependencies {
 
 	testImplementation(kotlin("test"))
 }
+
+tasks.test {
+	// The tests read the example charts and the spec's examples.
+	inputs.dir(rootProject.file("docs/examples"))
+	inputs.file(rootProject.file("docs/CHART_FORMAT.md"))
+}

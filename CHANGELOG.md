@@ -14,3 +14,12 @@
 + Added the chart validator.
     + Checks charts and packages against every rule in the chart format.
     + Warns when a moment is too dense to play with one hand on the keys.
++ Added basic, advanced and expert example charts for charters to learn the format from.
+
+### Fixes
+
+#### Charts
+
++ Fixed chart files loading with numbers that aren't valid JSON, like `0.5f` or `01`.
++ Fixed charts passing validation with a BPM so small that note times broke.
++ Fixed chart files saved with a byte-order mark failing to load.

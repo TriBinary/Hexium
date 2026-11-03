@@ -139,10 +139,12 @@ private class ChartChecker(private val chart: DifficultyChart, private val audio
 	fun check(): List<ChartIssue> {
 		checkHeader()
 		val bpmIsUsable = checkBpm()
+		val offsetIsUsable = chart.offsetMs.isFinite()
+		if (!offsetIsUsable) report(IssueCode.OFFSET_NOT_FINITE, "offsetMs", "is ${chart.offsetMs}, must be a finite number")
 		checkMeter()
 		for (i in chart.notes.indices) checkNote(chart.notes[i], "notes[$i]")
 		for (lane in groundByLane.values) checkLaneOverlaps(lane)
-		if (bpmIsUsable) checkAudioEnd()
+		if (bpmIsUsable && offsetIsUsable) checkAudioEnd()
 		checkDensity()
 		return issues
 	}
@@ -183,7 +185,9 @@ private class ChartChecker(private val chart: DifficultyChart, private val audio
 		var previous: Beat? = null
 		for (i in chart.bpm.indices) {
 			val change = chart.bpm[i]
-			if (!(change.bpm > 0.0)) report(IssueCode.BPM_NOT_POSITIVE, "bpm[$i].bpm", "is ${change.bpm}, must be above 0")
+			if (!TimingMap.isUsableBpm(change.bpm)) {
+				report(IssueCode.BPM_NOT_POSITIVE, "bpm[$i].bpm", "is ${change.bpm}, must be above 0 and give a finite beat length")
+			}
 			val path = "bpm[$i].t"
 			if (!checkBeat(change.t, path)) continue
 			if (i == 0 && change.t.compareTo(BEAT_ZERO) != 0) {
@@ -262,7 +266,9 @@ private class ChartChecker(private val chart: DifficultyChart, private val audio
 	}
 
 	private fun checkSlide(note: Note.Slide, path: String) {
-		if (!(note.radius > 0.0)) report(IssueCode.RADIUS_NOT_POSITIVE, "$path.radius", "is ${note.radius}, must be above 0")
+		if (!(note.radius > 0.0 && note.radius.isFinite())) {
+			report(IssueCode.RADIUS_NOT_POSITIVE, "$path.radius", "is ${note.radius}, must be a finite number above 0")
+		}
 		if (note.points.size < 2) {
 			report(IssueCode.SLIDE_TOO_FEW_POINTS, "$path.points", "has ${note.points.size}, must have at least 2")
 		}
@@ -317,7 +323,7 @@ private class ChartChecker(private val chart: DifficultyChart, private val audio
 	}
 
 	private fun checkSize(size: Double, path: String) {
-		if (!(size > 0.0)) report(IssueCode.SIZE_NOT_POSITIVE, "$path.size", "is $size, must be above 0")
+		if (!(size > 0.0 && size.isFinite())) report(IssueCode.SIZE_NOT_POSITIVE, "$path.size", "is $size, must be a finite number above 0")
 	}
 
 	private fun groundNotes(lane: Int) = groundByLane.getOrPut(lane) { ArrayList() }
