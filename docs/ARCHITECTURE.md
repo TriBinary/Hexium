@@ -49,7 +49,7 @@ Hexium is client-only (`"environment": "client"` in `fabric.mod.json`), so nearl
 - Hook the keyboard and mouse callbacks (Minecraft's keyboard and mouse handlers). Stamp each event with `glfwGetTime()` when it arrives and convert it to song time with the clock's mapping.
 - GLFW delivers events once per frame, so timestamp error is at most one frame. Tell players to run uncapped or at 240+ FPS during play (about 4 ms of error). Keep rendering fast so this holds.
 - Every frame, record an aim sample (song time, yaw, pitch → crosshair point on the screen plane). Slides and flicks are judged from these samples. Flicks test the line between two samples, so fast swipes at low FPS still register.
-- Events go into a queue that the judge drains every frame. Every input event and aim sample is also appended to the replay.
+- Events go into a queue that the judge drains every frame. Every input event and aim sample is also appended to the replay: the mod sends input through `ReplayRecorder`, which records it and passes it to the judge ([REPLAY_FORMAT.md](REPLAY_FORMAT.md)).
 
 ## Rendering
 

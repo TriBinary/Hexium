@@ -27,6 +27,11 @@
 + Added judging for sky taps, slides and flicks.
     + A swipe that jumps over a flick between two frames still hits it, so low frame rates stay fair.
 
+#### Online
+
++ Added replay files, which record every input of a play.
+    + Re-judging a replay gives exactly the result of the live play, so scores can be checked.
+
 ### Fixes
 
 #### Charts

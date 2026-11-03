@@ -34,5 +34,8 @@ data class JudgementConfig(
 ) {
 	companion object {
 		val DEFAULT = JudgementConfig()
+
+		/** Raise this whenever a change could alter a replay's result (docs/REPLAY_FORMAT.md). */
+		const val JUDGE_VERSION: Int = 1
 	}
 }

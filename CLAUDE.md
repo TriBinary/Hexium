@@ -12,7 +12,8 @@ docs/DESIGN.md.
 - Keep changes scoped to one task. Summarize what changed and why at the end.
 
 ## Read first
-- docs/DESIGN.md (what Hexium is), docs/JUDGEMENT.md, docs/CHART_FORMAT.md (the specs),
+- docs/DESIGN.md (what Hexium is), docs/JUDGEMENT.md, docs/CHART_FORMAT.md,
+  docs/REPLAY_FORMAT.md (the specs),
   docs/ARCHITECTURE.md (how the code is built), docs/DEVELOPMENT.md (commands, workflow).
 - Files in docs/ have upper-case names (docs/COMMIT_STRUCTURE.md), as in TownyMenu.
 - README.md faces players (what Hexium is, install, how to play, charts). Never put
@@ -48,7 +49,8 @@ docs/DESIGN.md.
   and Fix, as part of the change (format in docs/RELEASING.md).
 - After EVERY change, check which documents it affects and update them in the
   same change: this file, README.md (player-facing facts), CHANGELOG.md,
-  docs/DESIGN.md, docs/JUDGEMENT.md, docs/CHART_FORMAT.md, docs/DEVELOPMENT.md,
+  docs/DESIGN.md, docs/JUDGEMENT.md, docs/CHART_FORMAT.md, docs/REPLAY_FORMAT.md,
+  docs/DEVELOPMENT.md,
   docs/ARCHITECTURE.md, docs/API.md (server routes, once it exists),
   docs/RELEASING.md, docs/COMMIT_STRUCTURE.md, .claude/agents/*.md and
   .github/workflows/*.yml.

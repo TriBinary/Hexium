@@ -8,13 +8,15 @@ import net.trilleo.hexium.core.chart.SkyButton
  * same result. Nothing here allocates after construction.
  *
  * Results don't depend on how often [advanceTo] is called, only on the input. Time can't go
- * backwards: an input older than the current time counts as happening now, so feed each frame's
- * input before advancing to the frame's time.
+ * backwards: an input older than the current time counts as happening now. Live play goes
+ * through [net.trilleo.hexium.core.replay.ReplayRecorder], which records it that way too.
+ *
+ * All times passed in are raw song time: [judgementOffsetMs] (offset B) is subtracted from them.
  *
  * Crosshair positions are normalised screen coordinates, as in chart files, and may lie off the
  * screen. They're floats so a replay can store exactly what the judge saw.
  */
-class Judge(private val chart: JudgeChart) {
+class Judge(private val chart: JudgeChart, private val judgementOffsetMs: Double = 0.0) {
 	private val config = chart.config
 	private val weights = intArrayOf(
 		config.justiceCriticalWeightPercent,
@@ -93,7 +95,8 @@ class Judge(private val chart: JudgeChart) {
 
 	/** Judges everything due before [timeMs]. */
 	fun advanceTo(timeMs: Double) {
-		if (timeMs > now) now = timeMs
+		val time = timeMs - judgementOffsetMs
+		if (time > now) now = time
 		settleBefore(now)
 	}
 
@@ -105,7 +108,8 @@ class Judge(private val chart: JudgeChart) {
 
 	/** Records where the crosshair is. Call once per frame: slides and flicks are judged from these samples. */
 	fun aimSample(timeMs: Double, x: Float, y: Float) {
-		if (timeMs > now) now = timeMs
+		val time = timeMs - judgementOffsetMs
+		if (time > now) now = time
 		flickSeenUntilMs = now
 		val sampleX = x.toDouble()
 		val sampleY = y.toDouble()
