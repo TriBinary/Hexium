@@ -447,6 +447,25 @@ class ChartValidatorTest {
 		assertOnlyError(broken, IssueCode.BPM_NOT_POSITIVE, "bpm[0].bpm", audioDurationMs = 1.0)
 	}
 
+	// The judged-object limit. A hold has its head plus a tick every 1/4 beat between its start and end.
+
+	@Test
+	fun chartAtTheJudgedObjectLimitPasses() {
+		assertEquals(1_000_000, ChartLimits.MAX_JUDGED_OBJECTS)
+		assertValid(withNotes(Note.Hold(b(0), b(250_000), 0)))
+	}
+
+	@Test
+	fun chartOverTheJudgedObjectLimitFails() {
+		assertOnlyError(withNotes(Note.Hold(b(0), b(250_000, 1, 4), 0)), IssueCode.TOO_MANY_JUDGED_OBJECTS, "notes")
+		assertOnlyError(withNotes(Note.Hold(b(0), b(Int.MAX_VALUE), 0)), IssueCode.TOO_MANY_JUDGED_OBJECTS, "notes")
+		assertOnlyError(
+			withNotes(slide(point(b(0)), point(b(Int.MAX_VALUE)))),
+			IssueCode.TOO_MANY_JUDGED_OBJECTS,
+			"notes",
+		)
+	}
+
 	// The density warning
 
 	private fun fourLanes(t: Beat) = arrayOf<Note>(Note.Tap(t, 0), Note.Tap(t, 1), Note.Tap(t, 2), Note.Tap(t, 3))

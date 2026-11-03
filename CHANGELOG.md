@@ -16,6 +16,12 @@
     + Warns when a moment is too dense to play with one hand on the keys.
 + Added basic, advanced and expert example charts for charters to learn the format from.
 
+#### Gameplay
+
++ Added judging for ground taps and holds, with CHUNITHM's windows.
+    + Hold ticks are judged on how long ago the key was last down.
++ Added scoring up to 1,010,000, combo and clear lamps (Full Combo, All Justice, All Justice Critical).
+
 ### Fixes
 
 #### Charts
@@ -26,6 +32,7 @@
 + Fixed very large or badly broken chart files running out of memory.
     + Chart files are limited to 2 MiB, and reading one lists at most 100 problems.
 + Fixed whole-number fields accepting forms like `1e0`.
++ Fixed charts with a huge hold being able to run out of memory when their ticks are built.
 
 #### Misc
 

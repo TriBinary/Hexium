@@ -2,6 +2,8 @@ package net.trilleo.hexium.core.chart
 
 import java.math.BigInteger
 import net.trilleo.hexium.core.HexiumCore
+import net.trilleo.hexium.core.judge.JudgeChart
+import net.trilleo.hexium.core.judge.JudgementConfig
 
 /** The numbers behind the validator's rules (docs/CHART_FORMAT.md). */
 object ChartLimits {
@@ -16,6 +18,9 @@ object ChartLimits {
 
 	/** File text repeated in an issue is cut to this length. */
 	const val MAX_ISSUE_TEXT_CHARS: Int = 80
+
+	/** Keeps a huge hold from exhausting memory when its ticks are built. */
+	const val MAX_JUDGED_OBJECTS: Int = 1_000_000
 
 	const val LANE_COUNT: Int = 4
 	const val MAX_ID_LENGTH: Int = 64
@@ -145,6 +150,7 @@ private class ChartChecker(private val chart: DifficultyChart, private val audio
 	private val starts = ArrayList<NoteStart>()
 	private var lastEnd: Beat? = null
 	private var lastEndPath = ""
+	private var judgedObjects = 0L
 
 	fun check(): List<ChartIssue> {
 		checkHeader()
@@ -155,6 +161,9 @@ private class ChartChecker(private val chart: DifficultyChart, private val audio
 		for (i in chart.notes.indices) checkNote(chart.notes[i], "notes[$i]")
 		for (lane in groundByLane.values) checkLaneOverlaps(lane)
 		if (bpmIsUsable && offsetIsUsable) checkAudioEnd()
+		if (judgedObjects > ChartLimits.MAX_JUDGED_OBJECTS) {
+			report(IssueCode.TOO_MANY_JUDGED_OBJECTS, "notes", "has $judgedObjects judged objects, the limit is ${ChartLimits.MAX_JUDGED_OBJECTS}")
+		}
 		checkDensity()
 		return issues
 	}
@@ -245,6 +254,7 @@ private class ChartChecker(private val chart: DifficultyChart, private val audio
 		if (!checkBeat(note.t, "$path.t")) return
 		starts += NoteStart(note.t, false, path)
 		noteEnd(note.t, path)
+		judgedObjects++
 		if (laneIsValid) groundNotes(note.lane) += GroundNote(note.t, null, path)
 	}
 
@@ -262,9 +272,10 @@ private class ChartChecker(private val chart: DifficultyChart, private val audio
 				"$path.end",
 				"is ${text(note.end)}, must be after the hold's start (${text(note.t)})",
 			)
-		} else if (laneIsValid) {
-			groundNotes(note.lane) += GroundNote(note.t, note.end, path)
+			return
 		}
+		judgedObjects += 1 + ticks(note.t, note.end)
+		if (laneIsValid) groundNotes(note.lane) += GroundNote(note.t, note.end, path)
 	}
 
 	private fun checkSkyTap(note: Note.SkyTap, path: String) {
@@ -273,6 +284,7 @@ private class ChartChecker(private val chart: DifficultyChart, private val audio
 		if (!checkBeat(note.t, "$path.t")) return
 		starts += NoteStart(note.t, true, path)
 		noteEnd(note.t, path)
+		judgedObjects++
 	}
 
 	private fun checkSlide(note: Note.Slide, path: String) {
@@ -306,6 +318,8 @@ private class ChartChecker(private val chart: DifficultyChart, private val audio
 		}
 		if (allValid) {
 			for (point in note.points) noteEnd(point.t, path)
+			val last = note.points.lastOrNull()
+			if (last != null && last.t > note.points[0].t) judgedObjects += ticks(note.points[0].t, last.t)
 		}
 	}
 
@@ -319,7 +333,10 @@ private class ChartChecker(private val chart: DifficultyChart, private val audio
 		if (!checkBeat(note.t, "$path.t")) return
 		starts += NoteStart(note.t, true, path)
 		noteEnd(note.t, path)
+		judgedObjects++
 	}
+
+	private fun ticks(start: Beat, end: Beat) = JudgeChart.tickCount(start, end, JudgementConfig.DEFAULT.ticksPerBeat)
 
 	private fun checkLane(lane: Int, path: String): Boolean {
 		if (lane >= 0 && lane < chart.laneCount) return true
