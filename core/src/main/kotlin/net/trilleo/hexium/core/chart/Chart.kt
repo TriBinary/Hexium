@@ -16,6 +16,15 @@ enum class Ease(val id: String) {
 	IN("in"),
 	OUT("out"),
 	IN_OUT("inOut"),
+	;
+
+	/** Where the position is at [t], the progress from 0 to 1 along the segment. */
+	fun progress(t: Double): Double = when (this) {
+		LINEAR -> t
+		IN -> t * t
+		OUT -> 1.0 - (1.0 - t) * (1.0 - t)
+		IN_OUT -> t * t * (3.0 - 2.0 * t)
+	}
 }
 
 /** One `<difficulty>.json` file. */

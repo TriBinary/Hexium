@@ -75,6 +75,14 @@ class TimingMapTest {
 	}
 
 	@Test
+	fun msToBeatUndoesBeatToMs() {
+		val map = TimingMap(120.0, listOf(bpm(0, 174.0), bpm(64, 87.0), BpmChange(Beat(70, 1, 3), 200.0)))
+		for (beat in listOf(0.0, 0.5, 63.9, 64.0, 65.25, 70.0, 70.5, 500.0, -2.0)) {
+			assertEquals(beat, map.msToBeat(map.beatToMs(beat)), 1e-9)
+		}
+	}
+
+		@Test
 	fun doubleBeatMatchesExactBeat() {
 		val map = TimingMap(120.0, listOf(bpm(0, 174.0), bpm(64, 87.0)))
 		assertEquals(map.beatToMs(Beat(65, 1, 2)), map.beatToMs(65.5), tolerance)

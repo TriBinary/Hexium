@@ -22,6 +22,11 @@
     + Hold ticks are judged on how long ago the key was last down.
 + Added scoring up to 1,010,000, combo and clear lamps (Full Combo, All Justice, All Justice Critical).
 
+#### Sky Notes
+
++ Added judging for sky taps, slides and flicks.
+    + A swipe that jumps over a flick between two frames still hits it, so low frame rates stay fair.
+
 ### Fixes
 
 #### Charts

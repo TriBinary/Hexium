@@ -44,6 +44,17 @@ class TimingMap(offsetMs: Double, bpm: List<BpmChange>) {
 		return startMs[low] + (beat - startBeat[low]) * msPerBeat[low]
 	}
 
+	/** The inverse of [beatToMs]. */
+	fun msToBeat(ms: Double): Double {
+		var low = 0
+		var high = startMs.size - 1
+		while (low < high) {
+			val middle = (low + high + 1) ushr 1
+			if (startMs[middle] <= ms) low = middle else high = middle - 1
+		}
+		return startBeat[low] + (ms - startMs[low]) / msPerBeat[low]
+	}
+
 	internal companion object {
 		private const val MS_PER_MINUTE = 60000.0
 
