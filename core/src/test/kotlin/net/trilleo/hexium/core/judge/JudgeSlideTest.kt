@@ -54,6 +54,48 @@ class JudgeSlideTest {
 		assertEquals(1, judge.judgedCount)
 	}
 
+	private fun tickTimes(note: Note.Slide, chart: net.trilleo.hexium.core.chart.DifficultyChart): List<Int> {
+		val judge = Judge(JudgeChart.compile(chart.copy(notes = listOf(note))))
+		val times = ArrayList<Int>()
+		for (ms in 0..6000) {
+			val before = judge.judgedCount
+			judge.advanceTo(ms + 0.5)
+			repeat(judge.judgedCount - before) { times += ms }
+		}
+		return times
+	}
+
+	@Test
+	fun ticksRunAcrossEveryPointOfALongerSlide() {
+		val long = Note.Slide(
+			SkyButton.L,
+			0.1,
+			listOf(
+				SlidePoint(beat(1), 0.2, 0.5, Ease.LINEAR),
+				SlidePoint(beat(1, 3, 8), 0.3, 0.5, Ease.IN),
+				SlidePoint(beat(2), 0.4, 0.5, Ease.OUT),
+			),
+		)
+		assertEquals(listOf(1250, 1500, 1750), tickTimes(long, chartOf()))
+	}
+
+	@Test
+	fun ticksFromAnOffGridStartAreCountedFromIt() {
+		val off = Note.Slide(
+			SkyButton.L,
+			0.1,
+			listOf(SlidePoint(beat(1, 1, 8), 0.2, 0.5, Ease.LINEAR), SlidePoint(beat(1, 5, 8), 0.3, 0.5, Ease.LINEAR)),
+		)
+		assertEquals(listOf(1375), tickTimes(off, chartOf()))
+	}
+
+	@Test
+	fun ticksFollowBpmChanges() {
+		val plain = chartOf()
+		val changing = plain.copy(bpm = plain.bpm + net.trilleo.hexium.core.chart.BpmChange(beat(1, 1, 2), 120.0))
+		assertEquals(listOf(1250, 1500, 1625), tickTimes(slide, changing))
+	}
+
 	@Test
 	fun neverClickedMissesEveryTick() {
 		val judge = judgeOf(slide)
@@ -148,6 +190,14 @@ class JudgeSlideTest {
 		judge.follow(1304.0, 2000.0)
 		judge.finish()
 		assertEquals(listOf(Judgement.MISS, Judgement.JUSTICE_CRITICAL, Judgement.JUSTICE_CRITICAL), judge.judgements())
+	}
+
+	@Test
+	fun aSampleAfterATickDoesNotHelpIt() {
+		val judge = judgeOf(slide)
+		judge.pressButton(SkyButton.L, 1000.0, 0.9f, 0.9f)
+		judge.aimSample(1260.0, onPath(1260.0), 0.5f)
+		assertEquals(listOf(Judgement.MISS), judge.judgements())
 	}
 
 	@Test

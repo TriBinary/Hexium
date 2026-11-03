@@ -15,7 +15,7 @@ Minecraft 26.3 is unobfuscated, so no mappings are needed. The project uses Grad
 | `core` | only kotlinx-serialization-json (plain Kotlin/JVM, Java 25) | Chart model, parser, validator, timing map (BPM changes → ms), judge engine, scoring, replay format |
 | `mod` | `core`, Fabric API, Fabric Language Kotlin | Menu, session, stage loading, audio clock, input capture, rendering, HUD, screens, editor, network client |
 | `server` | `core` | Backend API, auth, chart storage, leaderboards, replay verifier |
-| `tools` | `core` | CLI: chart lint, chart convert, replay re-judge (used by CI and developers) |
+| `tools` | `core` | CLI: chart lint, replay re-judge, replay dump (used by CI and developers) |
 
 Only `core` knows the rules. The mod, the server and the `tools` CLI all depend on it.
 

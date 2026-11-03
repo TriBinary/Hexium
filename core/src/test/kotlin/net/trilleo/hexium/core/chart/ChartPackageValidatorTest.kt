@@ -72,6 +72,21 @@ class ChartPackageValidatorTest {
 	}
 
 	@Test
+	fun fileNamedAfterItsDifficultyPasses() {
+		assertEquals(emptyList(), ChartValidator.validateFileName(chart(Difficulty.BASIC), "basic.json"))
+		assertEquals("master.json", ChartValidator.fileName(Difficulty.MASTER))
+	}
+
+	@Test
+	fun fileNamedForAnotherDifficultyFails() {
+		assertOnlyError(
+			ChartValidator.validateFileName(chart(Difficulty.BASIC), "expert.json"),
+			IssueCode.FILE_NAME_MISMATCH,
+			"$",
+		)
+	}
+
+	@Test
 	fun blankTextFails() {
 		assertMetaError(meta.copy(title = ""), IssueCode.BLANK_TEXT, "title")
 		assertMetaError(meta.copy(artist = "  "), IssueCode.BLANK_TEXT, "artist")

@@ -82,8 +82,7 @@ class ReplayPlayTest {
 	}
 
 	private fun recorded(offsetMs: Double = 0.0, stepMs: Double = 1000.0 / 240): ReplayRecorder {
-		val judge = Judge(JudgeChart.compile(chart), offsetMs)
-		val recorder = ReplayRecorder(judge, Replay.hashOf(chartFile), offsetMs, 2_000)
+		val recorder = ReplayRecorder(JudgeChart.compile(chart), Replay.hashOf(chartFile), offsetMs, 2_000)
 		play(recorder, offsetMs, stepMs)
 		return recorder
 	}
@@ -151,7 +150,7 @@ class ReplayPlayTest {
 	@Test
 	fun anEventOlderThanTheCurrentTimeIsRecordedAsNow() {
 		val chart = chartOf(Note.Tap(beat(1), 0))
-		val recorder = ReplayRecorder(Judge(JudgeChart.compile(chart)), Replay.hashOf(ByteArray(0)), 0.0, 4)
+		val recorder = ReplayRecorder(JudgeChart.compile(chart), Replay.hashOf(ByteArray(0)), 0.0, 4)
 		recorder.advanceTo(1020.0)
 		recorder.pressLane(0, 1000.0)
 		recorder.aimSample(900.0, 0f, 0f)
@@ -164,7 +163,7 @@ class ReplayPlayTest {
 
 	@Test
 	fun theRecorderGrowsPastItsExpectedSize() {
-		val recorder = ReplayRecorder(Judge(JudgeChart.compile(chartOf())), Replay.hashOf(ByteArray(0)), 0.0, 1)
+		val recorder = ReplayRecorder(JudgeChart.compile(chartOf()), Replay.hashOf(ByteArray(0)), 0.0, 1)
 		for (i in 0 until 1000) recorder.aimSample(i.toDouble(), 0f, 0f)
 		assertEquals(1000, recorder.toReplay().eventCount)
 		assertEquals(999.0, recorder.toReplay().timeMs(999))
@@ -173,7 +172,7 @@ class ReplayPlayTest {
 	@Test
 	fun theRecorderStopsAtTheEventLimitAndStillJudges() {
 		val chart = chartOf(Note.Tap(beat(1), 0))
-		val recorder = ReplayRecorder(Judge(JudgeChart.compile(chart)), Replay.hashOf(ByteArray(0)), 0.0, 4)
+		val recorder = ReplayRecorder(JudgeChart.compile(chart), Replay.hashOf(ByteArray(0)), 0.0, 4)
 		for (i in 0 until Replay.MAX_EVENTS + 5) recorder.aimSample(0.0, 0f, 0f)
 		assertEquals(true, recorder.isFull)
 		recorder.pressLane(0, 1000.0)
@@ -185,7 +184,7 @@ class ReplayPlayTest {
 	fun recordingWithinItsExpectedSizeDoesNotAllocate() {
 		val threads = ManagementFactory.getThreadMXBean() as com.sun.management.ThreadMXBean
 		val chart = chartOf(Note.Tap(beat(1), 0))
-		val recorder = ReplayRecorder(Judge(JudgeChart.compile(chart)), Replay.hashOf(ByteArray(0)), 0.0, 400_000)
+		val recorder = ReplayRecorder(JudgeChart.compile(chart), Replay.hashOf(ByteArray(0)), 0.0, 400_000)
 		val thread = Thread.currentThread().threadId()
 		val before = threads.getThreadAllocatedBytes(thread)
 		var i = 0

@@ -26,7 +26,7 @@ docs/DESIGN.md.
             mixins in src/client/java/net/trilleo/hexium/client/mixin. src/main holds
             only shared constants (net.trilleo.hexium).
 - `server/` online server (Milestone 7), net.trilleo.hexium.server.
-- `tools/`  CLI: chart lint, replay re-judge, net.trilleo.hexium.tools.
+- `tools/`  CLI: chart lint, replay re-judge and dump, net.trilleo.hexium.tools.
 - Versions live in gradle.properties; `mod_version` is the mod's version.
 
 ## Hard rules

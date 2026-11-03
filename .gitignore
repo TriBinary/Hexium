@@ -44,3 +44,6 @@ crash-reports/
 
 # Claude Code: shared settings are committed, personal ones are not
 .claude/settings.local.json
+
+# jqwik's record of failed property tests
+.jqwik-database

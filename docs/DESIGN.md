@@ -156,7 +156,7 @@ Gameplay runs along the top row and content and release along the bottom row. On
 
 1. **M0 Foundations.** Repo, CI, `CLAUDE.md`, subagents, `docs/JUDGEMENT.md`, `docs/CHART_FORMAT.md`.
    - Gate: you've read and approved both specs.
-2. **M1 Core engine** (`core-engineer`). Chart model, parser and validator; three hand-written example charts; timing map; judge for all five note types; scoring; replay format; `tools` CLI (lint, re-judge).
+2. **M1 Core engine** (`core-engineer`). Chart model, parser and validator; three hand-written example charts; timing map; judge for all five note types; scoring; replay format; `tools` CLI (lint, re-judge, dump).
    - Gate: every rule in the judgement spec has a test; golden replays pass.
 3. **M2 Ground prototype** (`fabric-client`). Title button and menu; session gating; stage world loading; player lock; audio clock; ground tap and hold rendering; key input; combo and judgement HUD; results screen; offset calibration; debug overlay.
    - Gate: playtest. Timing feels tight, nothing drifts over a 3-minute song, and vanilla worlds are untouched.

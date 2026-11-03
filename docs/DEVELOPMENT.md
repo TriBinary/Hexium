@@ -17,7 +17,7 @@ The Gradle wrapper downloads the right Gradle version, and Loom downloads Minecr
 | `core/` | Plain Kotlin: chart model, timing, judge, scoring, replays. No Minecraft code. |
 | `mod/` | The Fabric mod. `src/client` holds almost everything (Hexium is client-only); mixins are Java in `src/client/java`. |
 | `server/` | The online server (from Milestone 7). |
-| `tools/` | Command-line tools: chart lint, replay re-judge. |
+| `tools/` | Command-line tools: chart lint, replay re-judge, replay dump. |
 | `docs/` | Design, specs and developer docs (upper-case file names). |
 | `docs/examples/` | Hand-written example charts in the writer's layout, used as test fixtures. |
 | `CHANGELOG.md` | Player-facing change log, see [RELEASING.md](RELEASING.md). |
@@ -29,7 +29,10 @@ The Gradle wrapper downloads the right Gradle version, and Loom downloads Minecr
 | `./gradlew build` | Builds every module and runs all tests |
 | `./gradlew :mod:runClient` | Starts Minecraft with Hexium in a dev environment |
 | `./gradlew :core:test` | Runs only the judge and chart tests (fast) |
-| `./gradlew :tools:run --args="lint docs/examples"` | Lints example charts (once the linter exists) |
+| `./gradlew :tools:run --args="lint docs/examples"` | Lints chart files or folders. A folder with a `meta.json` is also checked as a package |
+| `./gradlew :tools:run --args="rejudge docs/examples/basic.json play.hexreplay"` | Runs a replay through the judge and prints the result |
+| `./gradlew :tools:run --args="dump play.hexreplay"` | Prints a replay as text |
+| `./gradlew :core:test --rerun -Dhexium.updateGolden=true` | Regenerates the golden replays, after a deliberate change to the judge |
 | `./gradlew :server:run` | Runs the server locally (from Milestone 7) |
 
 The built mod is `mod/build/libs/hexium-<version>.jar`. The version comes only from `mod_version` in `gradle.properties`.
@@ -63,8 +66,8 @@ Parallel lanes that work well: after Milestone 1, `server` can build auth and ch
 ### Test strategy
 
 - **`core` unit tests:** one file of synthetic input per rule in `docs/JUDGEMENT.md`. For example: "tap 20 ms late → Justice Critical", "hold released 120 ms before a tick → Attack on that tick", "slide with crosshair outside radius → Miss on those ticks", "flick too slow → no hit".
-- **Golden replays:** recorded replays with their known scores live in `core/src/test/resources`. Any change to the judge must keep them identical, or update them on purpose in the same PR.
-- **Property tests (jqwik):** shifting every input by the judgement offset B leaves the score unchanged when B is set to match. Results never depend on frame rate (re-sample aim at 60 / 144 / 360 FPS and get the same score within tolerance).
+- **Golden replays:** replays with their known scores live in `core/src/test/resources/golden`. Any change to the judge must keep them identical, or update them on purpose in the same PR (and raise `JudgementConfig.JUDGE_VERSION`). So far they come from scripted players, with scores worked out by hand in `GoldenReplayTest`. Real recorded plays join them from Milestone 2. Editing an example chart changes its hash, so its golden replays must be regenerated too.
+- **Property tests (jqwik):** shifting every input by the judgement offset B leaves the score unchanged when B is set to match. A steady straight swipe gets the same judgement at every frame rate (other results can differ by what one frame's sampling can, see [JUDGEMENT.md](JUDGEMENT.md)). Random input never breaks the judge, and its replay always gives the same results.
 - **Fabric client game tests:** the title button opens the menu; the menu loads the stage; joining a normal singleplayer world creates no session; a short chart plays to the results screen with autoplay.
 - **Human playtest checklist per milestone:** offset calibration feels right; no drift after a 3-minute song; ground track readable while aiming at the corners; hold, slide and flick feel fair.
 

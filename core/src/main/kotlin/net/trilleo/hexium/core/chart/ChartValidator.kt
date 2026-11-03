@@ -129,7 +129,17 @@ object ChartValidator {
 		return true
 	}
 
-	private fun fileName(difficulty: Difficulty) = "${difficulty.name.lowercase()}.json"
+	/** The name a difficulty's file must have in a package. */
+	fun fileName(difficulty: Difficulty): String = "${difficulty.name.lowercase()}.json"
+
+	/** Whoever reads the files checks this, since [ChartPackage] keeps no file names. */
+	fun validateFileName(chart: DifficultyChart, fileName: String): List<ChartIssue> {
+		val expected = fileName(chart.difficulty)
+		if (fileName == expected) return emptyList()
+		return listOf(
+			error(IssueCode.FILE_NAME_MISMATCH, "$", "holds ${chart.difficulty}, so it must be named $expected, not $fileName"),
+		)
+	}
 
 	private const val META_FILE = "meta.json"
 }
@@ -160,7 +170,7 @@ private class ChartChecker(private val chart: DifficultyChart, private val audio
 		checkMeter()
 		for (i in chart.notes.indices) checkNote(chart.notes[i], "notes[$i]")
 		for (lane in groundByLane.values) checkLaneOverlaps(lane)
-		if (bpmIsUsable && offsetIsUsable) checkAudioEnd()
+		if (bpmIsUsable && offsetIsUsable) checkTimes()
 		if (judgedObjects > ChartLimits.MAX_JUDGED_OBJECTS) {
 			report(IssueCode.TOO_MANY_JUDGED_OBJECTS, "notes", "has $judgedObjects judged objects, the limit is ${ChartLimits.MAX_JUDGED_OBJECTS}")
 		}
@@ -407,11 +417,22 @@ private class ChartChecker(private val chart: DifficultyChart, private val audio
 		}
 	}
 
-	private fun checkAudioEnd() {
-		val end = lastEnd
-		if (audioDurationMs == null || end == null) return
-		val endMs = TimingMap(chart.offsetMs, chart.bpm).beatToMs(end)
-		if (!(endMs < audioDurationMs)) {
+	/** Times must stay finite, or a note could never be judged. */
+	private fun checkTimes() {
+		val timing = TimingMap(chart.offsetMs, chart.bpm)
+		for (i in chart.bpm.indices) {
+			if (!timing.beatToMs(chart.bpm[i].t).isFinite()) {
+				report(IssueCode.TIME_NOT_FINITE, "bpm[$i].t", "is ${text(chart.bpm[i].t)}, too far away to have a time at this BPM")
+				return
+			}
+		}
+		val end = lastEnd ?: return
+		val endMs = timing.beatToMs(end)
+		if (!endMs.isFinite()) {
+			report(IssueCode.TIME_NOT_FINITE, lastEndPath, "ends at beat ${text(end)}, too far away to have a time at this BPM")
+			return
+		}
+		if (audioDurationMs != null && !(endMs < audioDurationMs)) {
 			report(IssueCode.NOTE_AFTER_AUDIO, lastEndPath, "ends at $endMs ms, but the audio ends at $audioDurationMs ms")
 		}
 	}

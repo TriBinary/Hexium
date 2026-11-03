@@ -15,6 +15,7 @@
     + Checks charts and packages against every rule in the chart format.
     + Warns when a moment is too dense to play with one hand on the keys.
 + Added basic, advanced and expert example charts for charters to learn the format from.
++ Added a command-line chart linter, `lint`, that checks chart files and folders against the format.
 
 #### Gameplay
 
@@ -43,7 +44,20 @@
     + Chart files are limited to 2 MiB, and reading one lists at most 100 problems.
 + Fixed whole-number fields accepting forms like `1e0`.
 + Fixed charts with a huge hold being able to run out of memory when their ticks are built.
++ Fixed charts with notes too far away to have a time passing validation.
++ Fixed difficulty files named for another difficulty passing the linter.
+
+#### Sky Notes
+
++ Fixed an open flick window holding back other notes, so a press could count for a hold tick that had already passed.
++ Fixed a swipe already inside a flick when its window opens missing at some frame rates: it now counts as crossing at that moment.
 
 #### Misc
 
 + Hexium now requires Fabric Language Kotlin 1.14.2 or newer, instead of failing at the first chart load on older versions.
+
+### Technical Details
+
++ Added `rejudge` and `dump` to the command-line tools.
++ Added golden replays and property tests that guard the judge.
++ The build now lints the example charts.

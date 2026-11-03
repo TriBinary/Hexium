@@ -1,2 +1,5 @@
 # The example chart tests compare text exactly, and the spec holds examples they read.
 docs/** text eol=lf
+
+# Golden replays and their results must stay byte for byte.
+core/src/test/resources/golden/** -text

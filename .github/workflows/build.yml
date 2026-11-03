@@ -20,6 +20,8 @@ jobs:
         run: chmod +x ./gradlew
       - name: build and test
         run: ./gradlew build
+      - name: lint example charts
+        run: ./gradlew :tools:run --args="lint docs/examples"
       - name: capture mod jar
         uses: actions/upload-artifact@v7
         with:

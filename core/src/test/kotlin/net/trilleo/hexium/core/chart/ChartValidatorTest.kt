@@ -466,6 +466,25 @@ class ChartValidatorTest {
 		)
 	}
 
+	// Times must stay finite, or a note could never be judged.
+
+	@Test
+	fun noteTimesThatOverflowFail() {
+		val slow = chart.copy(bpm = listOf(BpmChange(b(0), 1e-300)))
+		assertOnlyError(slow.copy(notes = listOf(Note.Tap(b(2_000_000_000), 0))), IssueCode.TIME_NOT_FINITE, "notes[0]")
+	}
+
+	@Test
+	fun bpmChangesThatOverflowFail() {
+		val slow = chart.copy(bpm = listOf(BpmChange(b(0), 1e-300), BpmChange(b(2_000_000_000), 120.0)))
+		assertOnlyError(slow, IssueCode.TIME_NOT_FINITE, "bpm[1].t")
+	}
+
+	@Test
+	fun verySlowChartsWithFiniteTimesPass() {
+		assertValid(chart.copy(bpm = listOf(BpmChange(b(0), 1e-300)), notes = listOf(Note.Tap(b(1), 0))))
+	}
+
 	// The density warning
 
 	private fun fourLanes(t: Beat) = arrayOf<Note>(Note.Tap(t, 0), Note.Tap(t, 1), Note.Tap(t, 2), Note.Tap(t, 3))

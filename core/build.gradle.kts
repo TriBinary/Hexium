@@ -9,10 +9,14 @@ dependencies {
 	implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${providers.gradleProperty("kotlinx_serialization_version").get()}")
 
 	testImplementation(kotlin("test"))
+	testImplementation("net.jqwik:jqwik:${providers.gradleProperty("jqwik_version").get()}")
 }
 
 tasks.test {
 	// The tests read the example charts and the spec's examples.
 	inputs.dir(rootProject.file("docs/examples"))
 	inputs.file(rootProject.file("docs/CHART_FORMAT.md"))
+
+	// Regenerates the golden replays after a deliberate change (docs/DEVELOPMENT.md).
+	systemProperty("hexium.updateGolden", providers.systemProperty("hexium.updateGolden").getOrElse("false"))
 }

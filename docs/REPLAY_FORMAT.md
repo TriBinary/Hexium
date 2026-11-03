@@ -33,7 +33,7 @@ Each event starts with one byte, the kind in the high 4 bits and the index in th
 - Times never go down, so a replay always runs forward. When a player resumes from pause and the notes rewind, input isn't judged or recorded until play passes the point where it paused.
 - Times, `x`, `y` and offset B are finite.
 - A file holds at most 2,000,000 events, about 2 hours at 240 FPS. Reading stops at that size once decompressed, so a small file can't unpack into something huge.
-- A file with anything else wrong, including bytes left over after the last event, is rejected with a message. Reading never throws.
+- A file whose contents have anything else wrong, including bytes left over after the last event, is rejected with a message. Reading never throws. Only the unpacked contents are checked, so bytes outside the gzip data are ignored.
 
 ## Judge version
 

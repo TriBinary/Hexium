@@ -97,13 +97,20 @@ class Judge(private val chart: JudgeChart, private val judgementOffsetMs: Double
 	fun advanceTo(timeMs: Double) {
 		val time = timeMs - judgementOffsetMs
 		if (time > now) now = time
-		settleBefore(now)
+		settleBefore(now, waitForFlicks = true)
+	}
+
+	/** An input changes what's held, so everything due before it must be judged first. */
+	private fun settleForInput(timeMs: Double) {
+		val time = timeMs - judgementOffsetMs
+		if (time > now) now = time
+		settleBefore(now, waitForFlicks = false)
 	}
 
 	/** Judges everything left, once the song is over. */
 	fun finish() {
 		flickSeenUntilMs = Double.POSITIVE_INFINITY
-		settleBefore(Double.POSITIVE_INFINITY)
+		settleBefore(Double.POSITIVE_INFINITY, waitForFlicks = false)
 	}
 
 	/** Records where the crosshair is. Call once per frame: slides and flicks are judged from these samples. */
@@ -114,7 +121,7 @@ class Judge(private val chart: JudgeChart, private val judgementOffsetMs: Double
 		val sampleX = x.toDouble()
 		val sampleY = y.toDouble()
 		if (hasAim && now > aimMs) judgeFlicksAlong(sampleX, sampleY)
-		settleBefore(now)
+		settleBefore(now, waitForFlicks = false)
 		updateSlides(sampleX, sampleY)
 		hasAim = true
 		aimMs = now
@@ -125,7 +132,7 @@ class Judge(private val chart: JudgeChart, private val judgementOffsetMs: Double
 	fun pressButton(button: SkyButton, timeMs: Double, x: Float, y: Float) {
 		val b = button.ordinal
 		if (buttonDown[b]) return
-		advanceTo(timeMs)
+		settleForInput(timeMs)
 		buttonDown[b] = true
 		val clickX = x.toDouble()
 		val clickY = y.toDouble()
@@ -149,7 +156,7 @@ class Judge(private val chart: JudgeChart, private val judgementOffsetMs: Double
 	fun releaseButton(button: SkyButton, timeMs: Double) {
 		val b = button.ordinal
 		if (!buttonDown[b]) return
-		advanceTo(timeMs)
+		settleForInput(timeMs)
 		buttonDown[b] = false
 	}
 
@@ -197,15 +204,15 @@ class Judge(private val chart: JudgeChart, private val judgementOffsetMs: Double
 		val dy = toY - aimY
 		val length = Math.sqrt(dx * dx + dy * dy)
 		if (length * 1000.0 / dt <= config.flickMinSpeed) return
-		val angle = Math.toDegrees(Math.atan2(dy, dx))
+		val angle = Math.toDegrees(StrictMath.atan2(dy, dx))
 		while (true) {
 			var crossed = -1
 			var crossedAtMs = Double.POSITIVE_INFINITY
 			var i = nextFlick
 			while (i < flickJudged.size && chart.flickMs[i] - config.flickJusticeMs <= now) {
 				if (!flickJudged[i] && directionFits(i, angle)) {
-					val atMs = crossingMs(i, dx, dy, dt)
-					if (atMs < crossedAtMs && Math.abs(atMs - chart.flickMs[i]) <= config.flickJusticeMs) {
+					val atMs = crossingInWindowMs(i, dx, dy, dt)
+					if (atMs < crossedAtMs && atMs - chart.flickMs[i] <= config.flickJusticeMs) {
 						crossed = i
 						crossedAtMs = atMs
 					}
@@ -213,8 +220,8 @@ class Judge(private val chart: JudgeChart, private val judgementOffsetMs: Double
 				i++
 			}
 			if (crossed < 0) return
-			settleBefore(crossedAtMs)
-			if (!flickJudged[crossed]) judgeFlick(crossed, crossedAtMs)
+			settleBefore(crossedAtMs, waitForFlicks = false)
+			judgeFlick(crossed, crossedAtMs)
 		}
 	}
 
@@ -224,6 +231,21 @@ class Judge(private val chart: JudgeChart, private val judgementOffsetMs: Double
 		val difference = Math.abs(angle - dir) % 360.0
 		val shortest = if (difference > 180.0) 360.0 - difference else difference
 		return shortest <= config.flickDirectionToleranceDegrees
+	}
+
+	/**
+	 * When the swipe crosses a flick inside its window, or infinity if it doesn't. A swipe that entered
+	 * earlier and is still inside when the window opens counts as crossing at that moment.
+	 */
+	private fun crossingInWindowMs(flick: Int, dx: Double, dy: Double, dt: Double): Double {
+		val enteredMs = crossingMs(flick, dx, dy, dt)
+		val opensMs = chart.flickMs[flick] - config.flickJusticeMs
+		if (enteredMs >= opensMs || enteredMs == Double.POSITIVE_INFINITY) return enteredMs
+		val u = (opensMs - aimMs) / dt
+		val fromX = (aimX - chart.flickX[flick]) * config.screenAspect + dx * u
+		val fromY = aimY - chart.flickY[flick] + dy * u
+		val radius = chart.flickRadius[flick]
+		return if (fromX * fromX + fromY * fromY <= radius * radius) opensMs else Double.POSITIVE_INFINITY
 	}
 
 	/** When the swipe first enters a flick's hit area, or infinity if it doesn't. */
@@ -256,7 +278,7 @@ class Judge(private val chart: JudgeChart, private val judgementOffsetMs: Double
 
 	fun pressLane(lane: Int, timeMs: Double) {
 		if (lane < 0 || lane >= chart.laneCount || laneDown[lane]) return
-		advanceTo(timeMs)
+		settleForInput(timeMs)
 		laneDown[lane] = true
 		laneLastDownMs[lane] = now
 		val next = nextPress[lane]
@@ -270,17 +292,27 @@ class Judge(private val chart: JudgeChart, private val judgementOffsetMs: Double
 
 	fun releaseLane(lane: Int, timeMs: Double) {
 		if (lane < 0 || lane >= chart.laneCount || !laneDown[lane]) return
-		advanceTo(timeMs)
+		settleForInput(timeMs)
 		laneDown[lane] = false
 		laneLastDownMs[lane] = now
 	}
 
 	/**
-	 * Judges notes nobody hit and ticks due before [limit], earliest first. At equal times, ground
-	 * notes go before sky taps, sky taps before flicks, and all of them before ticks.
+	 * Judges notes nobody hit and ticks due before [requestedLimit], earliest first. At equal times,
+	 * ground notes go before sky taps, sky taps before flicks, and all of them before ticks.
+	 *
+	 * With [waitForFlicks], it stops at the last sample once a flick's window has opened: a swipe may
+	 * still be under way, and judging past it would make the order of results depend on how often
+	 * [advanceTo] is called. A flick's own Miss always waits for a sample past its deadline.
 	 */
-	private fun settleBefore(limit: Double) {
+	private fun settleBefore(requestedLimit: Double, waitForFlicks: Boolean) {
 		while (true) {
+			var limit = requestedLimit
+			if (waitForFlicks && nextFlick < flickJudged.size) {
+				val opens = chart.flickMs[nextFlick] - config.flickJusticeMs
+				val canSettleTo = if (flickSeenUntilMs > opens) flickSeenUntilMs else opens
+				if (canSettleTo < limit) limit = canSettleTo
+			}
 			var lane = -1
 			var button = -1
 			var flickIsDue = false
@@ -342,7 +374,7 @@ class Judge(private val chart: JudgeChart, private val judgementOffsetMs: Double
 			laneDown[lane] -> 0.0
 			else -> tickMs - laneLastDownMs[lane]
 		}
-		record(chart.tickObject[tick], tickJudgement(age), if (age == Double.POSITIVE_INFINITY) Double.NaN else -age)
+		record(chart.tickObject[tick], tickJudgement(age), if (age == Double.POSITIVE_INFINITY) Double.NaN else 0.0 - age)
 	}
 
 	private fun pressJudgement(delta: Double): Judgement {

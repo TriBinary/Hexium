@@ -96,7 +96,7 @@ enum class LicenseType(val id: String) {
 /**
  * The chart data of a `.hexium` package: its `meta.json` and every difficulty file.
  *
- * It keeps no file names, so the zip reader must check that each `<difficulty>.json` holds
- * that difficulty.
+ * It keeps no file names, so whoever reads the files must also call
+ * [ChartValidator.validateFileName].
  */
 data class ChartPackage(val meta: ChartMeta, val charts: List<DifficultyChart>)

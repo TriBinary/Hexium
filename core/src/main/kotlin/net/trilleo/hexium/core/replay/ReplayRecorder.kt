@@ -2,6 +2,7 @@ package net.trilleo.hexium.core.replay
 
 import net.trilleo.hexium.core.chart.SkyButton
 import net.trilleo.hexium.core.judge.Judge
+import net.trilleo.hexium.core.judge.JudgeChart
 import net.trilleo.hexium.core.judge.JudgementConfig
 
 /**
@@ -13,11 +14,13 @@ import net.trilleo.hexium.core.judge.JudgementConfig
  * [Replay.MAX_EVENTS] it stops recording but keeps judging: check [isFull] before submitting.
  */
 class ReplayRecorder(
-	val judge: Judge,
+	chart: JudgeChart,
 	private val chartHash: ByteArray,
 	private val judgementOffsetMs: Double,
 	expectedEvents: Int,
 ) {
+	val judge = Judge(chart, judgementOffsetMs)
+
 	private var capacity = expectedEvents.coerceIn(1, Replay.MAX_EVENTS)
 	private var events = ByteArray(capacity)
 	private var indexes = ByteArray(capacity)

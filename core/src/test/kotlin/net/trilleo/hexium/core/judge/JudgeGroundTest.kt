@@ -196,6 +196,36 @@ class JudgeGroundTest {
 	}
 
 	@Test
+	fun ticksFromAnOffGridStartAreCountedFromIt() {
+		val judge = judgeOf(Note.Hold(beat(1, 1, 3), beat(2), 0))
+		judge.pressLane(0, 1000.0 + 1000.0 / 3.0)
+		judge.advanceTo(1583.33)
+		assertEquals(1, judge.judgedCount, "first tick at 1583.33...")
+		judge.advanceTo(1583.34)
+		assertEquals(2, judge.judgedCount)
+		judge.advanceTo(1833.34)
+		assertEquals(3, judge.judgedCount)
+		judge.finish()
+		assertEquals(3, judge.judgedCount, "the next would be past the end")
+	}
+
+	@Test
+	fun holdHeadsUseTheEasyWindowsAndTheEarlyMissToo() {
+		fun head(pressMs: Double, difficulty: Difficulty): Judgement {
+			val judge = judgeOf(Note.Hold(beat(0), beat(1), 0), difficulty = difficulty)
+			judge.pressLane(0, pressMs)
+			return judge.judgement(0)
+		}
+		assertEquals(Judgement.ATTACK, head(100.0, Difficulty.BASIC))
+		assertEquals(Judgement.MISS, head(100.01, Difficulty.BASIC))
+		assertEquals(Judgement.MISS, head(83.34, Difficulty.EXPERT))
+		assertEquals(Judgement.MISS, head(-150.0, Difficulty.EXPERT))
+		val tooEarly = judgeOf(Note.Hold(beat(0), beat(1), 0))
+		tooEarly.pressLane(0, -150.01)
+		assertEquals(0, tooEarly.judgedCount)
+	}
+
+	@Test
 	fun tickOnAnExactFractionOfTheEndIsLeftOut() {
 		val chart = JudgeChart.compile(chartOf(Note.Hold(beat(0, 1, 3), beat(0, 5, 6), 0)))
 		assertEquals(2, chart.objectCount, "1/3 + 1/2 beat long: head plus one tick, none on the end")

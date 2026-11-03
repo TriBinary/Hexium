@@ -93,6 +93,7 @@ Errors:
 - Slide points rise strictly in time, with at least 2 points. All x and y values are in \[0, 1\].
 - `size` and `radius` are finite and above 0. `dir` is from 0 up to (not including) 360.
 - The last note ends before the audio does. The package is under 30 MiB.
+- Every note and BPM entry has a finite time, so a note can always be judged. A difficulty file's name matches its `difficulty` (checked by whatever reads the files).
 - A chart has at most 1,000,000 judged objects (see [JUDGEMENT.md](JUDGEMENT.md)), so a huge hold can't exhaust memory when its ticks are built.
 - `meta.json` follows the rules in its section above, and every chart's `difficulty` is listed in it.
 
