@@ -4,13 +4,15 @@ The music's playback position is the only clock. Minecraft's 20 TPS tick (50 ms)
 
 ## Toolchain
 
-Minecraft 26.3 is unobfuscated, so no mappings are needed. The project uses Gradle 9.8.2, Fabric Loom 1.19, Fabric Loader 0.20.1, Fabric API 0.165.0+26.3, Kotlin 2.4.21 and Fabric Language Kotlin 1.14.2, on Java 25. `gradle.properties` and the Gradle wrapper are the source of truth for versions; update this line when they change. Hexium is written in Kotlin with Gradle Kotlin DSL build scripts. The mod depends on Fabric Language Kotlin, which players install alongside Fabric API. Mixins stay in Java: each one is a few lines that call into Kotlin.
+Minecraft 26.3 is unobfuscated, so no mappings are needed. The project uses Gradle 9.8.2, Fabric Loom 1.19, Fabric Loader 0.20.1, Fabric API 0.165.0+26.3, Kotlin 2.4.21, Fabric Language Kotlin 1.14.2 and kotlinx-serialization-json 1.11.0, on Java 25. `gradle.properties` and the Gradle wrapper are the source of truth for versions; update this line when they change. Hexium is written in Kotlin with Gradle Kotlin DSL build scripts. The mod depends on Fabric Language Kotlin, which players install alongside Fabric API. Mixins stay in Java: each one is a few lines that call into Kotlin.
+
+`core` reads and writes chart JSON with kotlinx-serialization-json's tree API (`JsonElement`), without the compiler plugin or annotations on the model, so the parser can report every error in a file with its path. The mod doesn't bundle the library: Fabric Language Kotlin already ships it, so `kotlinx_serialization_version` in `gradle.properties` must stay on the version Fabric Language Kotlin bundles.
 
 ## Gradle modules
 
 | Module | Depends on | Holds |
 | --- | --- | --- |
-| `core` | nothing (plain Kotlin/JVM, Java 25) | Chart model, parser, validator, timing map (BPM changes → ms), judge engine, scoring, replay format |
+| `core` | only kotlinx-serialization-json (plain Kotlin/JVM, Java 25) | Chart model, parser, validator, timing map (BPM changes → ms), judge engine, scoring, replay format |
 | `mod` | `core`, Fabric API, Fabric Language Kotlin | Menu, session, stage loading, audio clock, input capture, rendering, HUD, screens, editor, network client |
 | `server` | `core` | Backend API, auth, chart storage, leaderboards, replay verifier |
 | `tools` | `core` | CLI: chart lint, chart convert, replay re-judge (used by CI and developers) |

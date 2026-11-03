@@ -14,8 +14,8 @@ Judgements use CHUNITHM's names and windows: Justice Critical, Justice, Attack, 
 ## Rules per note
 
 - **Tap and sky tap:** judged by |press time − target|. A sky tap also needs the crosshair inside the note's hit area at the moment of the click. A press with no note in its Miss window does nothing (no penalty).
-- **Ground hold:** the head is judged like a tap. The body has invisible ticks, one every 1/4 beat by default (tunable, at least one per hold). Each tick is judged on how long ago the key was last held. Releasing and pressing again inside the window keeps Justice Critical, like CHUNITHM. There's no tail judgement, and holding past the end is never penalised.
-- **Sky slide:** no head or tail judgement. Ticks every 1/4 beat along the path. A tick is "held" while the required button is down AND the crosshair is inside the path's hit radius at the path's current position. Tick windows as above.
+- **Ground hold:** the head is judged like a tap. The body has invisible ticks, one every 1/4 beat (fixed in `JudgementConfig`, not set per chart, at least one per hold). Each tick is judged on how long ago the key was last held. Releasing and pressing again inside the window keeps Justice Critical, like CHUNITHM. There's no tail judgement, and holding past the end is never penalised.
+- **Sky slide:** no head or tail judgement. Ticks every 1/4 beat along the path (the same fixed rate as holds). A tick is "held" while the required button is down AND the crosshair is inside the path's hit radius at the path's current position. Tick windows as above.
 - **Flick:** hit when the crosshair passes through the note's hit area between two frames, moving faster than a minimum speed (screen units per second), in the optional required direction. The judgement is the crossing time against the target.
 - A missed head doesn't auto-fail the hold's ticks. Each tick stands on its own.
 

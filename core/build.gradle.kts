@@ -5,5 +5,8 @@ plugins {
 }
 
 dependencies {
+	// Chart JSON, tree API only. In the mod it comes from Fabric Language Kotlin.
+	implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${providers.gradleProperty("kotlinx_serialization_version").get()}")
+
 	testImplementation(kotlin("test"))
 }

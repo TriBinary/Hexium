@@ -21,6 +21,9 @@ Confirmed decisions:
 | Platform | Fabric, Minecraft 26.3, solo play now; multiplayer possibly later |
 | Repo | TriBinary/Hexium; development on a fork, merged by PR (as with TownyMenu) |
 | Judgement | CHUNITHM standard; ground hold = head judgement + ticks, no tail; sky slide = hold click + follow path, ticks only, no head or tail |
+| Slide button | Each slide names its required button (L or R), like sky taps |
+| Tick rate | Hold and slide ticks are fixed at 1/4 beat in `JudgementConfig`, not set per chart |
+| Package extension | Chart packages are `.hexium` files |
 
 One caution on aiming: with real camera rotation, the ground track moves on screen whenever the player turns. Milestone 3 has a readability playtest gate, with a fallback if it fails.
 
@@ -192,7 +195,4 @@ The biggest risk is the gameplay feel of real camera rotation. It's tested in Mi
 
 1. **Offline-launcher players:** let them play everything except leaderboards and uploads? Or add your own website accounts as a second login method?
 2. **Life gauge:** none in v1 (score and lamps only). Do you want a CHUNITHM-style clear gauge later?
-3. **Slide button:** do slides say which button to hold (L or R, like sky taps, as in the format above), or can either button work?
-4. **Hold and slide tick rate:** 1/4 beat by default. Should it be per chart or fixed?
-5. **Speed changes:** mid-song note speed changes ("soflan") are left out of format v1. Do you want them in v2?
-6. **Chart file extension:** chart packages use .hexium in this guide. Keep it, or pick something shorter?
+3. **Speed changes:** mid-song note speed changes ("soflan") are left out of format v1. Do you want them in v2?
