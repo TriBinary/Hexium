@@ -10,6 +10,8 @@ enum class IssueCode {
 	UNKNOWN_FIELD,
 	UNKNOWN_VALUE,
 	UNKNOWN_FORMAT_VERSION,
+	FILE_TOO_LARGE,
+	TOO_MANY_PROBLEMS,
 
 	BAD_LANE_COUNT,
 	BAD_LEVEL,
@@ -55,3 +57,7 @@ data class ChartIssue(
 ) {
 	override fun toString(): String = "$severity $path: $message"
 }
+
+/** Cuts file text repeated in an issue, so a hostile file can't make huge messages. */
+internal fun shortened(text: String): String =
+	if (text.length <= ChartLimits.MAX_ISSUE_TEXT_CHARS) text else text.take(ChartLimits.MAX_ISSUE_TEXT_CHARS) + "…"

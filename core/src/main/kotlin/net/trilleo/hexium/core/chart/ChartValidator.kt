@@ -7,6 +7,16 @@ import net.trilleo.hexium.core.HexiumCore
 object ChartLimits {
 	/** A package must be smaller than this. */
 	const val MAX_PACKAGE_BYTES: Long = 30L * 1024 * 1024
+
+	/** A chart or meta file may be this long, counted in characters. */
+	const val MAX_JSON_FILE_CHARS: Int = 2 * 1024 * 1024
+
+	/** The parser stops listing problems after this many. */
+	const val MAX_PARSE_ISSUES: Int = 100
+
+	/** File text repeated in an issue is cut to this length. */
+	const val MAX_ISSUE_TEXT_CHARS: Int = 80
+
 	const val LANE_COUNT: Int = 4
 	const val MAX_ID_LENGTH: Int = 64
 
@@ -40,7 +50,7 @@ object ChartValidator {
 			issues += error(
 				IssueCode.BAD_ID,
 				"id",
-				"is \"${meta.id}\", must be 1 to ${ChartLimits.MAX_ID_LENGTH} characters from a-z, 0-9 and -",
+				"is \"${shortened(meta.id)}\", must be 1 to ${ChartLimits.MAX_ID_LENGTH} characters from a-z, 0-9 and -",
 			)
 		}
 		if (meta.title.isBlank()) issues += error(IssueCode.BLANK_TEXT, "title", "must not be blank")

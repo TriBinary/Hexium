@@ -23,3 +23,10 @@
 + Fixed chart files loading with numbers that aren't valid JSON, like `0.5f` or `01`.
 + Fixed charts passing validation with a BPM so small that note times broke.
 + Fixed chart files saved with a byte-order mark failing to load.
++ Fixed very large or badly broken chart files running out of memory.
+    + Chart files are limited to 2 MiB, and reading one lists at most 100 problems.
++ Fixed whole-number fields accepting forms like `1e0`.
+
+#### Misc
+
++ Hexium now requires Fabric Language Kotlin 1.14.2 or newer, instead of failing at the first chart load on older versions.

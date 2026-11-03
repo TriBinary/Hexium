@@ -66,6 +66,12 @@ class ChartPackageValidatorTest {
 	}
 
 	@Test
+	fun longBadIdsAreShortenedInTheMessage() {
+		val issue = ChartValidator.validateMeta(meta.copy(id = "X".repeat(10_000))).single()
+		assertTrue(issue.message.length < ChartLimits.MAX_ISSUE_TEXT_CHARS * 2, issue.message.length.toString())
+	}
+
+	@Test
 	fun blankTextFails() {
 		assertMetaError(meta.copy(title = ""), IssueCode.BLANK_TEXT, "title")
 		assertMetaError(meta.copy(artist = "  "), IssueCode.BLANK_TEXT, "artist")

@@ -27,6 +27,14 @@ object ChartParser {
 
 	private fun <T> parse(fileText: String, read: FileReader.(JsonObject) -> T?): ParseResult<T> {
 		val reader = FileReader()
+		if (fileText.length > ChartLimits.MAX_JSON_FILE_CHARS) {
+			reader.error(
+				IssueCode.FILE_TOO_LARGE,
+				ROOT,
+				"is ${fileText.length} characters long, the limit is ${ChartLimits.MAX_JSON_FILE_CHARS}",
+			)
+			return ParseResult(null, reader.issues)
+		}
 		val text = fileText.removePrefix(BYTE_ORDER_MARK)
 		if (nestsTooDeeply(text)) {
 			reader.error(IssueCode.INVALID_JSON, ROOT, "is not valid JSON: nested more than $MAX_NESTING levels deep")
@@ -35,7 +43,7 @@ object ChartParser {
 		val root = try {
 			Json.parseToJsonElement(text)
 		} catch (e: SerializationException) {
-			reader.error(IssueCode.INVALID_JSON, ROOT, "is not valid JSON: ${e.message?.lineSequence()?.first()}")
+			reader.error(IssueCode.INVALID_JSON, ROOT, "is not valid JSON: ${shortened(e.message?.lineSequence()?.first().orEmpty())}")
 			return ParseResult(null, reader.issues)
 		}
 		if (root !is JsonObject) {
@@ -78,6 +86,9 @@ private const val BYTE_ORDER_MARK = "\uFEFF"
 /** The JSON library and Kotlin's number parsing both accept more than JSON allows, like `0.5f` and `01`. */
 private val JSON_NUMBER = Regex("-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?")
 
+/** Whole-number fields are digits only: `1e0` and `1.0` are valid JSON but not how a lane is written. */
+private val JSON_WHOLE_NUMBER = Regex("-?(0|[1-9][0-9]*)")
+
 /** Far more than a chart needs (6 levels), with room for unknown fields. */
 private const val MAX_NESTING = 32
 
@@ -104,10 +115,28 @@ private class FileReader {
 	val issues = ArrayList<ChartIssue>()
 	var hasError = false
 		private set
+	private var isCut = false
 
 	fun error(code: IssueCode, path: String, message: String) {
 		hasError = true
-		issues += ChartIssue(Severity.ERROR, code, path, message)
+		add(ChartIssue(Severity.ERROR, code, path, message))
+	}
+
+	/** Past the cap, one final issue stands in for the rest. It's an error if any of the rest is. */
+	private fun add(issue: ChartIssue) {
+		if (issues.size < ChartLimits.MAX_PARSE_ISSUES) {
+			issues += issue
+		} else if (!isCut) {
+			isCut = true
+			issues += ChartIssue(
+				issue.severity,
+				IssueCode.TOO_MANY_PROBLEMS,
+				ROOT,
+				"has too many problems, only the first ${ChartLimits.MAX_PARSE_ISSUES} are listed",
+			)
+		} else if (issue.severity == Severity.ERROR) {
+			issues[issues.lastIndex] = issues.last().copy(severity = Severity.ERROR)
+		}
 	}
 
 	fun readFormatVersion(root: JsonObject): Boolean {
@@ -201,7 +230,7 @@ private class FileReader {
 				error(
 					IssueCode.UNKNOWN_VALUE,
 					join(path, "type"),
-					"is \"$type\", must be one of tap, hold, skyTap, slide, flick",
+					"is \"${shortened(type)}\", must be one of tap, hold, skyTap, slide, flick",
 				)
 				null
 			}
@@ -270,11 +299,13 @@ private class FileReader {
 	private fun warnUnknownFields(obj: JsonObject, path: String, known: Set<String>) {
 		for (key in obj.keys) {
 			if (key !in known) {
-				issues += ChartIssue(
-					Severity.WARNING,
-					IssueCode.UNKNOWN_FIELD,
-					join(path, key),
-					"is not a known field and was ignored",
+				add(
+					ChartIssue(
+						Severity.WARNING,
+						IssueCode.UNKNOWN_FIELD,
+						join(path, shortened(key)),
+						"is not a known field and was ignored",
+					),
 				)
 			}
 		}
@@ -327,7 +358,8 @@ private class FileReader {
 	}
 
 	private fun intOf(element: JsonElement): Int? {
-		return numberOf(element)?.intOrNull
+		val number = numberOf(element) ?: return null
+		return if (JSON_WHOLE_NUMBER.matches(number.content)) number.intOrNull else null
 	}
 
 	private fun double(obj: JsonObject, key: String, path: String): Double? {
@@ -369,7 +401,7 @@ private class FileReader {
 		for ((name, value) in names) {
 			if (name == text) return value
 		}
-		error(IssueCode.UNKNOWN_VALUE, path, "is \"$text\", must be one of ${names.joinToString { it.first }}")
+		error(IssueCode.UNKNOWN_VALUE, path, "is \"${shortened(text)}\", must be one of ${names.joinToString { it.first }}")
 		return null
 	}
 

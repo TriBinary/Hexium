@@ -6,7 +6,7 @@ The music's playback position is the only clock. Minecraft's 20 TPS tick (50 ms)
 
 Minecraft 26.3 is unobfuscated, so no mappings are needed. The project uses Gradle 9.8.2, Fabric Loom 1.19, Fabric Loader 0.20.1, Fabric API 0.165.0+26.3, Kotlin 2.4.21, Fabric Language Kotlin 1.14.2 and kotlinx-serialization-json 1.11.0, on Java 25. `gradle.properties` and the Gradle wrapper are the source of truth for versions; update this line when they change. Hexium is written in Kotlin with Gradle Kotlin DSL build scripts. The mod depends on Fabric Language Kotlin, which players install alongside Fabric API. Mixins stay in Java: each one is a few lines that call into Kotlin.
 
-`core` reads and writes chart JSON with kotlinx-serialization-json's tree API (`JsonElement`), without the compiler plugin or annotations on the model, so the parser can report every error in a file with its path. The mod doesn't bundle the library: Fabric Language Kotlin already ships it, so `kotlinx_serialization_version` in `gradle.properties` must stay on the version Fabric Language Kotlin bundles.
+`core` reads and writes chart JSON with kotlinx-serialization-json's tree API (`JsonElement`), without the compiler plugin or annotations on the model, so the parser can report every error in a file with its path. The mod doesn't bundle the library: Fabric Language Kotlin already ships it, so `kotlinx_serialization_version` in `gradle.properties` must stay on the version Fabric Language Kotlin bundles. When bumping Fabric Language Kotlin, also raise its minimum version in `fabric.mod.json`.
 
 ## Gradle modules
 

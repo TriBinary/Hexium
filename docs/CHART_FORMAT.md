@@ -69,11 +69,11 @@ Difficulties are `BASIC`, `ADVANCED`, `EXPERT` and `MASTER`.
 
 `dir` on a flick is optional, in degrees (0 = right, 90 = up). Leave it out to accept any direction. Difficulties BASIC and ADVANCED use the easy tap windows. `level` is a whole number.
 
-`button` is required on sky taps and slides, and is `L` or `R`. Every other field in the example is required. `size` and `radius` are in the same normalised units as `x` and `y`.
+`button` is required on sky taps and slides, and is `L` or `R`. Every other field in the example is required. `size` is a multiplier on the base hit area in `JudgementConfig`, so 1 is normal. `radius` is a fraction of the screen's height, so a slide's hit area is a circle: on a 6-block-tall screen, a `radius` of 0.06 is 0.36 blocks in every direction.
 
 `ease` is `linear`, `in`, `out` or `inOut`. It shapes the segment leaving that point, so the last point's `ease` is ignored (but still required).
 
-Optional fields are left out when unused, not set to `null`. Unknown fields are ignored with a warning, so a chart with extra fields still loads. JSON nested more than 32 levels deep is rejected, and numbers must follow JSON's grammar (`0.5f` and `01` are rejected). A byte-order mark at the start of a file is ignored.
+Optional fields are left out when unused, not set to `null`. Unknown fields are ignored with a warning, so a chart with extra fields still loads. JSON nested more than 32 levels deep is rejected, and numbers in known fields must follow JSON's grammar (`0.5f` and `01` are rejected). Whole-number fields, including every part of a beat, are digits with an optional minus (`1e0` and `1.0` are rejected). If a key is repeated in an object, the last one wins. A `meta.json` or difficulty file may be at most 2 MiB, counted in characters. The parser lists at most 100 problems in a file, then one final issue saying there are more. The validator has no such cap, so the editor can mark every problem. A byte-order mark at the start of a file is ignored.
 
 Hold and slide tick rates are not part of the chart. They're fixed in `JudgementConfig` (see [JUDGEMENT.md](JUDGEMENT.md)).
 

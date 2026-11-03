@@ -220,6 +220,126 @@ class ChartParserTest {
 	}
 
 	@Test
+	fun wholeNumbersAreDigitsOnly() {
+		for (bad in listOf("1e0", "1E0", "1.0")) {
+			assertSingleError(
+				ChartParser.parseDifficulty(chartWithNote("""{ "type": "tap", "t": [1,0,1], "lane": $bad }""")),
+				IssueCode.WRONG_TYPE,
+				"notes[0].lane",
+			)
+			assertSingleError(
+				ChartParser.parseDifficulty(chartWithNote("""{ "type": "tap", "t": [$bad,0,1], "lane": 0 }""")),
+				IssueCode.WRONG_TYPE,
+				"notes[0].t",
+			)
+		}
+		assertSingleError(ChartParser.parseDifficulty("""{ "formatVersion": 1e0 }"""), IssueCode.WRONG_TYPE, "formatVersion")
+		assertEquals(
+			Note.Tap(Beat(1, 0, 1), -1),
+			ChartParser.parseDifficulty(chartWithNote("""{ "type": "tap", "t": [1,0,1], "lane": -1 }""")).value?.notes?.single(),
+		)
+	}
+
+	@Test
+	fun theLastRepeatedKeyWins() {
+		val note = ChartParser.parseDifficulty(chartWithNote("""{ "type": "tap", "t": [1,0,1], "lane": 0, "lane": 3 }"""))
+		assertEquals(emptyList(), note.issues)
+		assertEquals(Note.Tap(Beat(1, 0, 1), 3), note.value?.notes?.single())
+	}
+
+	@Test
+	fun filesOverTheSizeLimitAreRejectedBeforeReading() {
+		val limit = ChartLimits.MAX_JSON_FILE_CHARS
+		assertEquals(2 * 1024 * 1024, limit)
+		assertSingleError(ChartParser.parseDifficulty(" ".repeat(limit + 1)), IssueCode.FILE_TOO_LARGE, "$")
+		assertSingleError(ChartParser.parseMeta(" ".repeat(limit + 1)), IssueCode.FILE_TOO_LARGE, "$")
+		assertSingleError(ChartParser.parseDifficulty("[".repeat(limit + 1)), IssueCode.FILE_TOO_LARGE, "$")
+	}
+
+	@Test
+	fun fileAtTheSizeLimitIsRead() {
+		val padded = specExample + " ".repeat(ChartLimits.MAX_JSON_FILE_CHARS - specExample.length)
+		assertEquals(emptyList(), ChartParser.parseDifficulty(padded).issues)
+	}
+
+	@Test
+	fun theWorstFileUnderTheLimitStaysBounded() {
+		val start = """{ "formatVersion": 1, "difficulty": "BASIC", "level": 1, "laneCount": 4, "offsetMs": 0, "bpm": [], "meter": [], "notes": ["""
+		val end = "1] }"
+		val items = (ChartLimits.MAX_JSON_FILE_CHARS - start.length - end.length) / 2
+		val result = ChartParser.parseDifficulty(start + "1,".repeat(items) + end)
+		assertNull(result.value)
+		assertEquals(ChartLimits.MAX_PARSE_ISSUES + 1, result.issues.size)
+	}
+
+	@Test
+	fun theHeaviestNestingUnderTheLimitIsStillReported() {
+		val start = """{ "formatVersion": 1, "extra": ["""
+		val end = "1] }"
+		val item = "[".repeat(30) + "1" + "]".repeat(30) + ","
+		val items = (ChartLimits.MAX_JSON_FILE_CHARS - start.length - end.length) / item.length
+		val result = ChartParser.parseDifficulty(start + item.repeat(items) + end)
+		assertNull(result.value)
+		assertTrue(result.issues.any { it.code == IssueCode.MISSING_FIELD })
+	}
+
+	private fun notesText(count: Int, note: String) = chartWithNote(List(count) { note }.joinToString())
+
+	@Test
+	fun issuesStopAtTheCapWithAFinalIssue() {
+		val limit = ChartLimits.MAX_PARSE_ISSUES
+		assertEquals(100, limit)
+
+		val atCap = ChartParser.parseDifficulty(notesText(limit, "1"))
+		assertEquals(limit, atCap.issues.size)
+		assertTrue(atCap.issues.none { it.code == IssueCode.TOO_MANY_PROBLEMS })
+
+		val over = ChartParser.parseDifficulty(notesText(limit + 50, "1"))
+		assertNull(over.value)
+		assertEquals(limit + 1, over.issues.size)
+		assertEquals(IssueCode.WRONG_TYPE, over.issues[limit - 1].code)
+		assertEquals(IssueCode.TOO_MANY_PROBLEMS, over.issues[limit].code)
+		assertEquals(Severity.ERROR, over.issues[limit].severity)
+	}
+
+	@Test
+	fun tooManyWarningsStillLoadTheChart() {
+		val fields = List(ChartLimits.MAX_PARSE_ISSUES + 5) { """"extra$it": 0""" }.joinToString()
+		val result = ChartParser.parseDifficulty(chartWithNote("""{ "type": "tap", "t": [1,0,1], "lane": 0, $fields }"""))
+		assertNotNull(result.value)
+		assertEquals(ChartLimits.MAX_PARSE_ISSUES + 1, result.issues.size)
+		assertEquals(IssueCode.TOO_MANY_PROBLEMS, result.issues.last().code)
+		assertEquals(Severity.WARNING, result.issues.last().severity)
+	}
+
+	@Test
+	fun anErrorPastTheCapStillFailsAndSaysSo() {
+		val fields = List(ChartLimits.MAX_PARSE_ISSUES + 5) { """"extra$it": 0""" }.joinToString()
+		val result = ChartParser.parseDifficulty(chartWithNote("""{ "type": "tap", "t": [1,0,1], "lane": 0, $fields }, 1"""))
+		assertNull(result.value)
+		assertEquals(ChartLimits.MAX_PARSE_ISSUES + 1, result.issues.size)
+		assertTrue(result.issues.any { it.severity == Severity.ERROR })
+		assertEquals(Severity.ERROR, result.issues.last().severity)
+	}
+
+	@Test
+	fun longTextInIssuesIsShortened() {
+		val long = "x".repeat(10_000)
+		val limit = ChartLimits.MAX_ISSUE_TEXT_CHARS
+		val type = ChartParser.parseDifficulty(chartWithNote("""{ "type": "$long" }""")).issues.single()
+		assertTrue(type.message.length < limit * 2, type.message.length.toString())
+
+		val difficulty = ChartParser.parseDifficulty(specExample.replace("EXPERT", long)).issues.single()
+		assertTrue(difficulty.message.length < limit * 2, difficulty.message.length.toString())
+
+		val field = ChartParser.parseDifficulty(specExample.replace(""""level": 11,""", """"level": 11, "$long": 0,""")).issues.single()
+		assertTrue(field.path.length < limit * 2, field.path.length.toString())
+
+		val broken = ChartParser.parseDifficulty("{ \"$long").issues.single()
+		assertTrue(broken.message.length < limit * 2, broken.message.length.toString())
+	}
+
+	@Test
 	fun rootMustBeAnObject() {
 		assertSingleError(ChartParser.parseDifficulty("[]"), IssueCode.WRONG_TYPE, "$")
 	}
