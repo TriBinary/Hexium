@@ -89,7 +89,7 @@ Errors:
 - The first meter entry is at beat 0. Meter entries rise strictly in time. `num` and `den` are above 0.
 - `lane` is from 0 up to `laneCount`. A hold's `end` is after its `t`.
 - Holds in the same lane don't overlap. A tap doesn't sit inside a hold in its lane. A hold covers its start up to, but not including, its end: a hold may start exactly where another ends, and a tap may sit exactly on a hold's end, but a tap on a hold's head is an error.
-- No two taps or hold heads share the same time and lane, since one press resolves at most one note.
+- No two taps or hold heads share the same time and lane, since one press resolves at most one note. (Two holds sharing a head are reported as an overlap.)
 - Slide points rise strictly in time, with at least 2 points. All x and y values are in \[0, 1\].
 - `size` and `radius` are above 0. `dir` is from 0 up to (not including) 360.
 - The last note ends before the audio does. The package is under 30 MiB.
@@ -97,4 +97,4 @@ Errors:
 
 Warning (not an error):
 
-- A sliding window of 1/16 beat holds at least 4 ground inputs and at least 1 sky input, since that's hard to play with one hand on the keys. Only note starts count: taps and hold heads for ground, sky taps, flicks and the first point of a slide for sky.
+- A sliding window shorter than 1/16 beat (notes exactly 1/16 beat apart aren't in the same window) holds at least 4 ground inputs and at least 1 sky input, since that's hard to play with one hand on the keys. Only note starts count: taps and hold heads for ground, sky taps, flicks and the first point of a slide for sky.
