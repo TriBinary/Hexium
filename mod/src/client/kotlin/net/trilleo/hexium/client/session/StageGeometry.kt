@@ -17,11 +17,11 @@ object StageGeometry {
 	/** How far the platform reaches each side of the block the player is on. */
 	const val PLATFORM_REACH = 1
 
-	/** Looking down at the middle of the screen, 3 blocks up and 8 away, from eyes 4.62 up. */
-	const val REST_PITCH = 11.4f
+	/** Looking down at the middle of the screen, 3 blocks up and 6 away, from eyes 4.62 up. */
+	const val REST_PITCH = 15.1f
 
-	/** Where the screen's bottom edge is, 8 blocks in front of the player. */
-	const val JUDGEMENT_Z = STAND_Z + 8.0
+	/** Where the screen's bottom edge is, 6 blocks in front of the player. */
+	const val JUDGEMENT_Z = STAND_Z + 6.0
 
 	/** Four of these make the track as wide as the sky screen will be, 12 blocks. */
 	const val LANE_WIDTH = 3.0

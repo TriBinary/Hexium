@@ -41,6 +41,7 @@
     + Tap to clicks with your eyes closed, then to moving notes with no sound, and it suggests a judgement offset and a visual offset that you can adjust before saving.
 + Your note speed and offsets are now remembered, in `.minecraft/hexium/settings.json`.
 + Added the stage: a plain floor with a raised platform you stand on, looking down the lanes, kept apart from your normal worlds.
+    + You stand 6 blocks from the judgement line, so it's close enough to read.
     + You can look around, but moving, jumping and action keys are off while you're on it.
     + The hunger bar is hidden.
 + Added judging for ground taps and holds, with CHUNITHM's windows.
