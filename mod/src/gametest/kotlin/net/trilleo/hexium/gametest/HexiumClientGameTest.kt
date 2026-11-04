@@ -7,20 +7,32 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.TitleScreen
 import net.minecraft.client.gui.screens.inventory.InventoryScreen
 import net.minecraft.client.tutorial.TutorialSteps
+import net.minecraft.sounds.SoundSource
 import net.minecraft.world.Difficulty
 import net.minecraft.world.level.GameType
 import net.minecraft.world.level.gamerules.GameRules
+import net.trilleo.hexium.client.input.LaneInput
+import net.trilleo.hexium.client.play.PlaySession
 import net.trilleo.hexium.client.screen.HexiumMenuScreen
 import net.trilleo.hexium.client.screen.StageMenuScreen
 import net.trilleo.hexium.client.session.HexiumSession
 import net.trilleo.hexium.client.session.StageGeometry
+import net.trilleo.hexium.core.chart.Note
+import net.trilleo.hexium.core.chart.TimingMap
+import net.trilleo.hexium.core.judge.ClearLamp
+import net.trilleo.hexium.core.judge.Judgement
+import net.trilleo.hexium.core.replay.ReplayJudge
+import org.lwjgl.sdl.SDLTimer
 
 /** Runs in the real game. See docs/DEVELOPMENT.md. */
 class HexiumClientGameTest : FabricClientGameTest {
 	override fun runTest(context: ClientGameTestContext) {
 		context.waitForScreen(TitleScreen::class.java)
 		context.takeScreenshot("title")
+		// Songs play on a real audio device. Keep them quiet.
+		context.runOnClient<RuntimeException> { it.options.getSoundSourceOptionInstance(SoundSource.MASTER).set(0.0) }
 		theStageLocksThePlayerAndLeavesCleanly(context)
+		aChartPlaysToTheEndAndItsReplayMatches(context)
 		normalWorldsAreUntouched(context)
 	}
 
@@ -112,6 +124,98 @@ class HexiumClientGameTest : FabricClientGameTest {
 		context.waitForScreen(TitleScreen::class.java)
 	}
 
+	private fun aChartPlaysToTheEndAndItsReplayMatches(context: ClientGameTestContext) {
+		context.clickScreenButton("hexium.title_button")
+		context.waitForScreen(HexiumMenuScreen::class.java)
+		context.clickScreenButton("hexium.difficulty.basic")
+		context.waitFor({ HexiumSession.play()?.state == PlaySession.State.PLAYING }, LOAD_TICKS)
+		val play = HexiumSession.play()!!
+		pauseAndCheckTimeStops(context, play)
+
+		val script = script(play)
+		var next = 0
+		// Ticks are too coarse to press from, so it presses ahead, stamped with the note's own time,
+		// the way SDL stamps a real key. So every note should land dead on.
+		val bot = { song: Double ->
+			while (next < script.size && script[next].atMs <= song + BOT_LOOKAHEAD_MS) {
+				val nowNs = SDLTimer.SDL_GetTicksNS()
+				val aheadMs = script[next].atMs - play.clock.songTimeAt(nowNs)
+				LaneInput.push(script[next].lane, script[next].down, nowNs + (aheadMs * NANOS_PER_MS).toLong())
+				next++
+			}
+		}
+		context.waitFor({
+			bot(play.clock.songTimeMs)
+			play.clock.songTimeMs >= PAUSE_AT_MS
+		}, SONG_TICKS)
+		pauseAndCheckTimeStops(context, play)
+		context.waitFor({
+			bot(play.clock.songTimeMs)
+			play.state == PlaySession.State.FINISHED
+		}, SONG_TICKS)
+		context.takeScreenshot("finished")
+		context.runOnClient<RuntimeException> {
+			val judge = play.judge
+			check(next == script.size) { "the play ended before the script did" }
+			check(judge.judgedCount == judge.objectCount) { "${judge.judgedCount} of ${judge.objectCount} judged" }
+			for (i in 0 until judge.judgedCount) {
+				val delta = judge.judgedDeltaMs(i)
+				if (judge.judgedIsPress(i)) check(Math.abs(delta) < MAX_BOT_ERROR_MS) { "a press was $delta ms off" }
+			}
+			check(judge.clearLamp == ClearLamp.ALL_JUSTICE_CRITICAL) { "lamp ${judge.clearLamp}, score ${judge.score}" }
+			check(judge.score == PERFECT_SCORE) { "score ${judge.score}" }
+			check(judge.count(Judgement.MISS) == 0) { "${judge.count(Judgement.MISS)} Misses from a bot that hit everything" }
+			check(judge.score > 0) { "no score" }
+			val replay = play.recorder.toReplay()
+			check(replay.eventCount > judge.objectCount) { "only ${replay.eventCount} events recorded" }
+			val again = ReplayJudge.rejudge(play.chartFile, replay).judge!!
+			check(again.score == judge.score && again.maxCombo == judge.maxCombo) {
+				"the replay scored ${again.score}, live scored ${judge.score}"
+			}
+		}
+		context.runOnClient<RuntimeException> { it.pauseGame(false) }
+		context.waitForScreen(StageMenuScreen::class.java)
+		context.clickScreenButton("hexium.stage.leave")
+		context.waitForScreen(HexiumMenuScreen::class.java)
+		context.clickScreenButton("gui.back")
+		context.waitForScreen(TitleScreen::class.java)
+	}
+
+	private fun pauseAndCheckTimeStops(context: ClientGameTestContext, play: PlaySession) {
+		context.runOnClient<RuntimeException> { it.pauseGame(false) }
+		context.waitForScreen(StageMenuScreen::class.java)
+		context.waitFor({ play.state == PlaySession.State.PAUSED }, SETTLE_TICKS)
+		val pausedAt = context.computeOnClient<Double, RuntimeException> { play.clock.songTimeMs }
+		context.waitTicks(SETTLE_TICKS)
+		context.runOnClient<RuntimeException> {
+			check(play.clock.songTimeMs == pausedAt) { "time moved from $pausedAt to ${play.clock.songTimeMs} while paused" }
+		}
+		context.setScreen { null }
+		context.waitFor({ play.state == PlaySession.State.PLAYING && play.clock.songTimeMs > pausedAt }, SETTLE_TICKS)
+	}
+
+	private class Press(val atMs: Double, val lane: Int, val down: Boolean)
+
+	/** A bot that plays every note. */
+	private fun script(play: PlaySession): List<Press> {
+		val timing = TimingMap(play.chart.offsetMs, play.chart.bpm)
+		val presses = ArrayList<Press>()
+		for (note in play.chart.notes) {
+			when (note) {
+				is Note.Tap -> {
+					presses += Press(timing.beatToMs(note.t), note.lane, true)
+					presses += Press(timing.beatToMs(note.t) + TAP_LENGTH_MS, note.lane, false)
+				}
+				is Note.Hold -> {
+					presses += Press(timing.beatToMs(note.t), note.lane, true)
+					presses += Press(timing.beatToMs(note.end), note.lane, false)
+				}
+				else -> error("Sky note in a ground chart")
+			}
+		}
+		return presses.sortedBy { it.atMs }
+	}
+
 	private fun normalWorldsAreUntouched(context: ClientGameTestContext) {
 		context.worldBuilder().create().use { world ->
 			world.connection.waitForChunksRender()
@@ -151,5 +255,14 @@ class HexiumClientGameTest : FabricClientGameTest {
 		const val SETTLE_TICKS = 20
 		const val HOLD_TICKS = 40
 		const val TURN_PIXELS = 200.0
+		const val TAP_LENGTH_MS = 30.0
+		const val SONG_TICKS = 1200
+		const val BOT_LOOKAHEAD_MS = 120.0
+		const val NANOS_PER_MS = 1_000_000.0
+		const val MAX_BOT_ERROR_MS = 5.0
+		const val PERFECT_SCORE = 1_010_000
+
+		/** Between notes in basic.json. */
+		const val PAUSE_AT_MS = 3250.0
 	}
 }

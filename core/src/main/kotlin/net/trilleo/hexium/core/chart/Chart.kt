@@ -41,6 +41,24 @@ data class DifficultyChart(
 	/** True if every note is on the ground track: no sky taps, slides or flicks. */
 	val isGroundOnly: Boolean
 		get() = notes.all { it is Note.Tap || it is Note.Hold }
+
+	/** When the last note ends, in song milliseconds, or 0 if there are no notes. */
+	fun lastNoteEndMs(): Double {
+		val timing = TimingMap(offsetMs, bpm)
+		var last = 0.0
+		for (note in notes) {
+			val end = when (note) {
+				is Note.Tap -> note.t
+				is Note.Hold -> note.end
+				is Note.SkyTap -> note.t
+				is Note.Flick -> note.t
+				is Note.Slide -> note.points.last().t
+			}
+			val endMs = timing.beatToMs(end)
+			if (endMs > last) last = endMs
+		}
+		return last
+	}
 }
 
 data class BpmChange(val t: Beat, val bpm: Double)

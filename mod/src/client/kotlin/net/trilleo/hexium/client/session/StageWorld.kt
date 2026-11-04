@@ -35,6 +35,7 @@ import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorSettings
 import net.minecraft.world.level.levelgen.presets.WorldPresets
 import net.minecraft.world.level.storage.LevelStorageSource
 import net.trilleo.hexium.Hexium
+import net.trilleo.hexium.client.play.PlaySession
 import net.trilleo.hexium.client.screen.HexiumMenuScreen
 import org.slf4j.LoggerFactory
 
@@ -57,13 +58,14 @@ object StageWorld {
 	 * Only the Hexium menu may call this. If the world can't be made, the player ends up on [parent] or,
 	 * if Minecraft can't open its folder, the title screen. Either of those ends the session.
 	 */
-	fun enter(minecraft: Minecraft, parent: Screen) {
+	fun enter(minecraft: Minecraft, parent: Screen, play: PlaySession) {
 		val folder = FabricLoader.getInstance().gameDir.resolve("hexium").resolve("stages")
 		if (!deleteOldStage(folder.resolve(LEVEL_ID))) {
 			SystemToast.onWorldAccessFailure(minecraft, LEVEL_ID)
+			play.close()
 			return
 		}
-		HexiumSession.start()
+		HexiumSession.start(play)
 		minecraft.musicManager.stopPlaying()
 		setView(minecraft)
 		val settings = LevelSettings(
@@ -102,6 +104,7 @@ object StageWorld {
 	 * pass of the task queue, since disconnecting waits for the server and draws frames meanwhile.
 	 */
 	fun leave(minecraft: Minecraft) {
+		HexiumSession.play()?.clock?.pause()
 		minecraft.schedule {
 			minecraft.disconnectFromWorld(ClientLevel.DEFAULT_QUIT_MESSAGE)
 			minecraft.gui.setScreen(HexiumMenuScreen(TitleScreen()))

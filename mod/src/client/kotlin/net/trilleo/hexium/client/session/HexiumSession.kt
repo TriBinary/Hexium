@@ -1,6 +1,7 @@
 package net.trilleo.hexium.client.session
 
 import net.minecraft.client.Minecraft
+import net.trilleo.hexium.client.play.PlaySession
 import net.trilleo.hexium.client.screen.StageMenuScreen
 
 /**
@@ -11,18 +12,32 @@ import net.trilleo.hexium.client.screen.StageMenuScreen
 object HexiumSession {
 	@Volatile
 	private var active = false
+	private var play: PlaySession? = null
 
 	@JvmStatic
 	fun active(): Boolean = active
 
-	fun start() {
+	fun start(play: PlaySession? = null) {
 		active = true
+		this.play = play
+	}
+
+	/** The play going on, if this session has one. */
+	@JvmStatic
+	fun play(): PlaySession? = play
+
+	/** Called at the start of every frame, after input arrives. */
+	@JvmStatic
+	fun frame() {
+		play?.frame()
 	}
 
 	/** Render thread only. */
 	fun end() {
 		if (!active) return
 		active = false
+		play?.close()
+		play = null
 		StageWorld.restoreView()
 	}
 

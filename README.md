@@ -6,7 +6,7 @@
 
 ## How it plays
 
-- **Ground track:** four lanes under your feet. Press A, S, D or F as notes reach the line. Some notes are holds: keep the key down until they end.
+- **Ground track:** four lanes under your feet. Press A, S, D or F (the same positions on any keyboard layout) as notes reach the line. Some notes are holds: keep the key down until they end.
 - **Sky screen:** a giant screen in front of you. Aim at sky notes and click: left or right click, depending on the note. Slides need you to hold the click and follow a path. Flicks need a quick swipe through the note, no click.
 - **Timing:** every hit is judged Justice Critical, Justice, Attack or Miss. A perfect play scores 1,010,000.
 - **Charts:** play built-in charts, make your own in the in-game editor, and share them online with leaderboards (coming later).

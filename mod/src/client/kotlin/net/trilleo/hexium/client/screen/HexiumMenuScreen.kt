@@ -1,18 +1,23 @@
 package net.trilleo.hexium.client.screen
 
+import java.io.IOException
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.StringWidget
 import net.minecraft.client.gui.components.Tooltip
+import net.minecraft.client.gui.components.toasts.SystemToast
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout
 import net.minecraft.client.gui.layouts.LinearLayout
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.CommonComponents
 import net.minecraft.network.chat.Component
 import net.trilleo.hexium.client.chart.ChartLibrary
+import net.trilleo.hexium.Hexium
 import net.trilleo.hexium.client.chart.ChartPack
+import net.trilleo.hexium.client.play.PlaySession
 import net.trilleo.hexium.client.session.HexiumSession
 import net.trilleo.hexium.client.session.StageWorld
 import net.trilleo.hexium.core.chart.DifficultyChart
+import org.slf4j.LoggerFactory
 
 /** Hexium's menu, opened from the title screen. A plain list of charts until song select exists. */
 class HexiumMenuScreen(private val lastScreen: Screen) : Screen(TITLE) {
@@ -80,13 +85,33 @@ class HexiumMenuScreen(private val lastScreen: Screen) : Screen(TITLE) {
 			row.addChild(broken)
 			return row
 		}
-		for (chart in pack.charts) row.addChild(difficultyButton(chart))
+		for (chart in pack.charts) row.addChild(difficultyButton(pack, chart))
 		return row
 	}
 
-	private fun difficultyButton(chart: DifficultyChart): Button {
+	private fun play(pack: ChartPack, chart: DifficultyChart) {
+		try {
+			StageWorld.enter(minecraft, this, PlaySession.load(pack, chart.difficulty))
+		} catch (e: IOException) {
+			cantPlay(pack, chart, e)
+		} catch (e: RuntimeException) {
+			cantPlay(pack, chart, e)
+		}
+	}
+
+	private fun cantPlay(pack: ChartPack, chart: DifficultyChart, cause: Exception) {
+		LOGGER.warn("Can't play {} in {}", chart.difficulty, pack.folder, cause)
+		SystemToast.add(
+			minecraft.gui.toastManager(),
+			SystemToast.SystemToastId.PACK_LOAD_FAILURE,
+			Component.translatable("hexium.menu.cant_play"),
+			Component.literal(cause.message.orEmpty()),
+		)
+	}
+
+	private fun difficultyButton(pack: ChartPack, chart: DifficultyChart): Button {
 		val difficulty = Component.translatable("hexium.difficulty.${chart.difficulty.name.lowercase()}")
-		val button = Button.builder(difficulty) { StageWorld.enter(minecraft, this) }.width(DIFFICULTY_WIDTH)
+		val button = Button.builder(difficulty) { play(pack, chart) }.width(DIFFICULTY_WIDTH)
 		if (!chart.isGroundOnly) button.tooltip(Tooltip.create(Component.translatable("hexium.menu.sky_notes")))
 		return button.build().also { it.active = chart.isGroundOnly }
 	}
@@ -96,6 +121,7 @@ class HexiumMenuScreen(private val lastScreen: Screen) : Screen(TITLE) {
 	}
 
 	private companion object {
+		val LOGGER = LoggerFactory.getLogger(Hexium.MOD_ID)
 		val TITLE: Component = Component.translatable("hexium.menu.title")
 		/** How far HeaderAndFooterLayout keeps its contents below the header. */
 		const val CONTENT_TOP_MARGIN = 30

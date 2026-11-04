@@ -13,5 +13,15 @@
   "hexium.audio_test.resume": "继续",
   "hexium.audio_test.rewind": "后退 3 秒",
   "hexium.audio_test.failed": "无法播放歌曲：%s",
-  "hexium.stage.leave": "离开舞台"
+  "hexium.stage.leave": "离开舞台",
+  "hexium.menu.cant_play": "无法游玩此谱面",
+  "hexium.play.ready": "准备",
+  "hexium.play.finished": "已结束。按 Esc 离开。",
+  "hexium.judgement.justice_critical": "Justice Critical",
+  "hexium.judgement.justice": "Justice",
+  "hexium.judgement.attack": "Attack",
+  "hexium.judgement.miss": "Miss",
+  "hexium.lamp.full_combo": "Full Combo",
+  "hexium.lamp.all_justice": "All Justice",
+  "hexium.lamp.all_justice_critical": "All Justice Critical"
 }

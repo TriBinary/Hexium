@@ -2,6 +2,7 @@ package net.trilleo.hexium.client
 
 import net.fabricmc.api.ClientModInitializer
 import net.trilleo.hexium.Hexium
+import net.trilleo.hexium.client.play.PlayHud
 import net.trilleo.hexium.client.screen.TitleScreenButton
 import net.trilleo.hexium.client.session.StageHud
 import net.trilleo.hexium.client.session.StageWorld
@@ -14,6 +15,7 @@ object HexiumClient : ClientModInitializer {
 		TitleScreenButton.register()
 		StageWorld.registerEvents()
 		StageHud.register()
+		PlayHud.register()
 		LOGGER.info("Hexium loaded")
 	}
 }

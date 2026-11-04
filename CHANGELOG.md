@@ -10,8 +10,7 @@
     + The menu lists every chart it finds, including a built-in Test Pattern and any folders in `.minecraft/hexium/charts`.
     + Broken charts are marked and show their first problem, and the full list goes to the log.
     + Charts with sky notes are shown but can't be selected yet.
-+ Choosing a difficulty now takes you to the stage, and Esc offers a way back to the menu.
-    + Notes aren't there yet: the stage is empty for now.
++ Choosing a difficulty now plays it on the stage, and Esc offers a way back to the menu.
 
 #### Charts
 
@@ -28,6 +27,9 @@
 
 #### Gameplay
 
++ Ground charts can now be played: press A S D F (the same positions on any keyboard layout) in time with the song, with combo, judgement and score on screen.
+    + Presses are timed from when the key went down, not when the game got round to it.
+    + The notes themselves aren't drawn yet, so for now it's played by ear.
 + Added the stage: a plain floor you stand on, kept apart from your normal worlds.
     + You can look around, but moving, jumping and action keys are off while you're on it.
     + The hunger bar is hidden.

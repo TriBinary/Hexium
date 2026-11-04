@@ -13,5 +13,15 @@
   "hexium.audio_test.resume": "Resume",
   "hexium.audio_test.rewind": "Back 3 s",
   "hexium.audio_test.failed": "Can't play the song: %s",
-  "hexium.stage.leave": "Leave Stage"
+  "hexium.stage.leave": "Leave Stage",
+  "hexium.menu.cant_play": "Can't play this chart",
+  "hexium.play.ready": "Get ready",
+  "hexium.play.finished": "Finished. Press Esc to leave.",
+  "hexium.judgement.justice_critical": "Justice Critical",
+  "hexium.judgement.justice": "Justice",
+  "hexium.judgement.attack": "Attack",
+  "hexium.judgement.miss": "Miss",
+  "hexium.lamp.full_combo": "Full Combo",
+  "hexium.lamp.all_justice": "All Justice",
+  "hexium.lamp.all_justice_critical": "All Justice Critical"
 }

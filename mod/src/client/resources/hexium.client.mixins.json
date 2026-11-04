@@ -7,6 +7,7 @@
 		"MinecraftMixin",
 		"MouseHandlerMixin",
 		"MusicManagerMixin",
+		"SDLEventHandlerMixin",
 		"SoundLibraryMixin",
 		"TutorialMixin"
 	],

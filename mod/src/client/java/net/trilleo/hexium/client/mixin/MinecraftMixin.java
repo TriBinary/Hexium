@@ -16,6 +16,13 @@ abstract class MinecraftMixin {
 		ci.cancel();
 	}
 
+	/** Input has just arrived, and nothing has read the time yet. */
+	@Inject(method = "runTick", at = @At("HEAD"))
+	private void hexium$frame(boolean advanceGameTime, CallbackInfo ci) {
+		if (!HexiumSession.active()) return;
+		HexiumSession.frame();
+	}
+
 	/** Vanilla's pause menu could leave the stage without going through Hexium. */
 	@Inject(method = "pauseGame", at = @At("HEAD"), cancellable = true)
 	private void hexium$ownPauseMenu(boolean suppressPauseMenu, CallbackInfo ci) {

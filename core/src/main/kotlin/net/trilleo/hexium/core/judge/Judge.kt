@@ -90,6 +90,9 @@ class Judge(private val chart: JudgeChart, private val judgementOffsetMs: Double
 	/** The judged object's index in the chart's notes. */
 	fun judgedNote(index: Int): Int = chart.objectNote[judgedObject[index]]
 
+	/** False for hold and slide ticks: their delta is how long ago the input was held, not how well it was timed. */
+	fun judgedIsPress(index: Int): Boolean = chart.tickObject.isEmpty() || judgedObject[index] < chart.tickObject[0]
+
 	/** Input time minus target time. Negative is early. NaN if there was no input to measure. */
 	fun judgedDeltaMs(index: Int): Double = judgedDelta[index]
 

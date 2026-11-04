@@ -100,3 +100,36 @@ class TimingMapTest {
 		assertFailsWith<IllegalArgumentException> { TimingMap(Double.NaN, listOf(bpm(0, 120.0))) }
 	}
 }
+
+class LastNoteEndTest {
+	private val beat = BpmChange(Beat(0, 0, 1), 120.0)
+
+	private fun chart(vararg notes: Note) = DifficultyChart(1, Difficulty.BASIC, 1, 4, 100.0, listOf(beat), emptyList(), notes.toList())
+
+	@Test
+	fun aChartWithNoNotesEndsAtItsStart() {
+		assertEquals(0.0, chart().lastNoteEndMs(), 1e-9)
+	}
+
+	@Test
+	fun theLatestEndNeedNotBeTheLastNoteListed() {
+		val chart = chart(Note.Hold(Beat(1, 0, 1), Beat(9, 0, 1), 0), Note.Tap(Beat(2, 0, 1), 1))
+		assertEquals(4600.0, chart.lastNoteEndMs(), 1e-9)
+	}
+
+	@Test
+	fun notesBeforeTheSongStartEndAtZero() {
+		val chart = chart(Note.Tap(Beat(1, 0, 1), 0)).copy(offsetMs = -2000.0)
+		assertEquals(0.0, chart.lastNoteEndMs(), 1e-9)
+	}
+
+	@Test
+	fun itIsTheLatestEndOfAnyNoteType() {
+		val point = { whole: Int -> SlidePoint(Beat(whole, 0, 1), 0.5, 0.5, Ease.LINEAR) }
+		assertEquals(1100.0, chart(Note.Tap(Beat(2, 0, 1), 0)).lastNoteEndMs(), 1e-9)
+		assertEquals(2100.0, chart(Note.Tap(Beat(1, 0, 1), 0), Note.Hold(Beat(1, 0, 1), Beat(4, 0, 1), 1)).lastNoteEndMs(), 1e-9)
+		assertEquals(1600.0, chart(Note.SkyTap(Beat(3, 0, 1), 0.5, 0.5, SkyButton.L, 1.0)).lastNoteEndMs(), 1e-9)
+		assertEquals(2600.0, chart(Note.Flick(Beat(5, 0, 1), 0.5, 0.5, null, 1.0)).lastNoteEndMs(), 1e-9)
+		assertEquals(3100.0, chart(Note.Slide(SkyButton.L, 0.06, listOf(point(1), point(6)))).lastNoteEndMs(), 1e-9)
+	}
+}

@@ -15,8 +15,18 @@ class AudioClock(private val stream: SongStream) {
 	var songTimeMs = 0.0
 		private set
 
+	/** True while the clock is running but hasn't reached the start of the song. */
+	private var inLeadIn = false
+
+	/** Starts from [leadInMs] before the song, so the first notes aren't sprung on the player. */
+	fun playAfter(leadInMs: Double) {
+		songTimeMs = -leadInMs
+		play()
+	}
+
 	fun play() {
-		stream.play()
+		inLeadIn = songTimeMs < 0.0
+		if (!inLeadIn) stream.play()
 		clock.start(songTimeMs, SDLTimer.SDL_GetTicksNS())
 	}
 
@@ -37,5 +47,12 @@ class AudioClock(private val stream: SongStream) {
 		stream.recoverIfLost(clock.nowMs(now))
 		clock.observe(stream.positionMs(), now)
 		songTimeMs = clock.nowMs(now)
+		if (inLeadIn && clock.running && songTimeMs >= 0.0) {
+			inLeadIn = false
+			stream.play()
+		}
 	}
+
+	/** Song time when something stamped [ticksNs] on SDL's tick counter happened. */
+	fun songTimeAt(ticksNs: Long): Double = clock.mapMs(ticksNs)
 }

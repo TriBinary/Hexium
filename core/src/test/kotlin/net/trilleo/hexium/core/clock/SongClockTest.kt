@@ -219,4 +219,20 @@ class SongClockTest {
 		assertEquals(0.0, clock.maxDriftMs)
 		assertEquals(1, clock.resyncCount)
 	}
+
+	/** Before the music starts there's no position, so the first one is believed at once. */
+	@Test
+	fun afterALeadInTheFirstAudioPositionIsTakenWhole() {
+		val clock = SongClock()
+		clock.start(-3000.0, 0L)
+		var wall = 0L
+		while (wall < 3_000_000_000L) {
+			wall += frameNs
+			clock.observe(Double.NaN, wall)
+		}
+		assertEquals(0.0, clock.nowMs(wall), 5.0)
+		clock.observe(-21.0, wall)
+		assertEquals(-21.0, clock.mapMs(wall), 1e-6)
+		assertEquals(0, clock.resyncCount)
+	}
 }
