@@ -7,6 +7,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import kotlin.test.assertNull
 import net.trilleo.hexium.core.chart.ChartParser
 import net.trilleo.hexium.core.judge.ClearLamp
@@ -164,6 +165,7 @@ class GoldenReplayTest {
 
 	@Test
 	fun recordedPlaysKeepTheirResults() {
+		assertTrue(recordedPlays(recordedFolder).isNotEmpty(), "the recorded plays have gone missing")
 		assertRecordedPlaysMatch(recordedFolder)
 	}
 
