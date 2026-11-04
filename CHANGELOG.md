@@ -65,6 +65,9 @@
 
 ### Technical Details
 
++ Added song playback through Hexium's own OpenAL source and an audio clock that follows it.
+    + When the audio device changes or sounds reload, the song returns at the right place once the game has reloaded.
++ Added an Audio Test screen with a debug overlay, for checking that the clock stays with the music over a whole song.
 + Added `rejudge` and `dump` to the command-line tools.
 + Added golden replays and property tests that guard the judge.
 + The build now lints the example charts.

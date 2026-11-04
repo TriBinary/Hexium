@@ -78,6 +78,10 @@ Parallel lanes that work well: after Milestone 1, `server` can build auth and ch
 - **Fabric client game tests:** the title button opens the menu; the menu loads the stage; joining a normal singleplayer world creates no session; a short chart plays to the results screen with autoplay.
 - **Human playtest checklist per milestone:** offset calibration feels right; no drift after a 3-minute song; ground track readable while aiming at the corners; hold, slide and flick feel fair.
 
+### Checking the clock
+
+The Hexium menu has an Audio Test button. It plays the bundled click track with a flash on every beat and the debug overlay on screen. Let the whole song play: the flash and the click should still line up at the end, and `resyncs` and `underruns` should stay at 0. After the first couple of seconds `drift` should stay small: it peaked at 8.5 ms over the whole song on a Mac outside the game, so anything over about 20 ms needs a look. `max` includes the start of playback, when the audio is still behind by the sound card's latency. Back 3 s tests seeking. Changing the audio device or pressing F3+T tests recovery: the song goes quiet under the loading screen, then comes back at the right place.
+
 ### Example task prompts
 
 - *"Read docs/CHART_FORMAT.md. Implement the chart model, JSON parser and validator in `core`, test-first. Cover every validator rule with a passing and a failing example. No Minecraft code."*

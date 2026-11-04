@@ -8,5 +8,10 @@
   "hexium.difficulty.basic": "Basic",
   "hexium.difficulty.advanced": "Advanced",
   "hexium.difficulty.expert": "Expert",
-  "hexium.difficulty.master": "Master"
+  "hexium.difficulty.master": "Master",
+  "hexium.audio_test.title": "Audio Test",
+  "hexium.audio_test.pause": "Pause",
+  "hexium.audio_test.resume": "Resume",
+  "hexium.audio_test.rewind": "Back 3 s",
+  "hexium.audio_test.failed": "Can't play the song: %s"
 }

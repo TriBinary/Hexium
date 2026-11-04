@@ -11,6 +11,7 @@ import net.minecraft.network.chat.CommonComponents
 import net.minecraft.network.chat.Component
 import net.trilleo.hexium.client.chart.ChartLibrary
 import net.trilleo.hexium.client.chart.ChartPack
+import net.trilleo.hexium.client.session.HexiumSession
 import net.trilleo.hexium.core.chart.DifficultyChart
 
 /** Hexium's menu, opened from the title screen. A plain list of charts until song select exists. */
@@ -36,13 +37,26 @@ class HexiumMenuScreen(private val lastScreen: Screen) : Screen(TITLE) {
 
 		val footer = layout.addToFooter(LinearLayout.horizontal().spacing(ROW_SPACING))
 		val previous = footer.addChild(pageButton("<", -1))
-		footer.addChild(Button.builder(CommonComponents.GUI_BACK) { onClose() }.width(BACK_WIDTH).build())
+		val audioTest = footer.addChild(
+			Button.builder(Component.translatable("hexium.audio_test.title")) { openAudioTest() }.width(FOOTER_BUTTON_WIDTH).build(),
+		)
+		audioTest.active = audioTestPack() != null
+		footer.addChild(Button.builder(CommonComponents.GUI_BACK) { onClose() }.width(FOOTER_BUTTON_WIDTH).build())
 		val next = footer.addChild(pageButton(">", 1))
 		previous.active = page > 0
 		next.active = page < pages - 1
 
 		layout.arrangeElements()
 		layout.visitWidgets { addRenderableWidget(it) }
+	}
+
+	private fun audioTestPack(): ChartPack? = packs.firstOrNull { it.errors.isEmpty() && it.charts.isNotEmpty() }
+
+	private fun openAudioTest() {
+		val pack = audioTestPack() ?: return
+		val screen = AudioTestScreen(this, pack)
+		HexiumSession.start()
+		minecraft.gui.setScreen(screen)
 	}
 
 	private fun pageButton(label: String, step: Int): Button =
@@ -98,7 +112,7 @@ class HexiumMenuScreen(private val lastScreen: Screen) : Screen(TITLE) {
 		const val STATUS_COLOR = -1
 		const val TITLE_WIDTH = 140
 		const val DIFFICULTY_WIDTH = 64
-		const val BACK_WIDTH = 150
+		const val FOOTER_BUTTON_WIDTH = 100
 		const val PAGE_BUTTON_WIDTH = 20
 	}
 }

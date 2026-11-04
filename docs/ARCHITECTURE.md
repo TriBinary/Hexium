@@ -40,14 +40,15 @@ Hexium is client-only (`"environment": "client"` in `fabric.mod.json`), so nearl
 
 ## Audio and clock
 
-- Songs are not played through Minecraft's sound manager. The mod decodes OGG with stb_vorbis (bundled with LWJGL) and streams it into its own OpenAL source on the game's existing OpenAL context.
-- Song position comes from `AL_SAMPLE_OFFSET`, plus the OpenAL Soft latency extension if it's there. This raw value updates in steps, so the clock runs on `System.nanoTime()` and is gently nudged toward the audio position. It never jumps backwards.
+- Songs are not played through Minecraft's sound manager. The mod decodes OGG with stb_vorbis (bundled with LWJGL) on a background thread and streams it into its own OpenAL source on the game's existing OpenAL context (`SongStream`). Minecraft destroys that context when the audio device changes or sounds reload, so a mixin stops the stream first, and it rebuilds its source on the new one at the clock's current time. The song is silent while Minecraft's loading screen covers the game.
+- Song position comes from `AL_SEC_OFFSET_LATENCY_SOFT` (the OpenAL Soft latency extension), or `AL_SAMPLE_OFFSET` if it isn't there. This raw value updates in steps, so the clock runs on SDL's tick counter, the clock input events are stamped with, and is gently pulled toward the audio position. It only jumps if the audio is over 100 ms away, and never runs backwards: it holds still until the music catches up. The logic is `SongClock` in `core`, which has no time source of its own, so it can be tested. `AudioClock` in `mod` feeds it.
+- Vanilla music is held for the length of a session.
 - Draw time = song time − visual offset (A). Judgement time = input song time − judgement offset (B).
 
 ## Input timing
 
-- Hook the keyboard and mouse callbacks (Minecraft's keyboard and mouse handlers). Stamp each event with `glfwGetTime()` when it arrives and convert it to song time with the clock's mapping.
-- GLFW delivers events once per frame, so timestamp error is at most one frame. Tell players to run uncapped or at 240+ FPS during play (about 4 ms of error). Keep rendering fast so this holds.
+- Minecraft 26.3 uses SDL3, not GLFW. Read input in `SDLEventHandler`, since it hands keys on to the keyboard handler later in the frame. Each SDL event carries a `timestamp` from SDL's tick counter (`SDL_GetTicksNS`), the same clock the song clock runs on, so convert that to song time with the clock's mapping.
+- Events are polled once per frame, so without a real timestamp from the OS the error is at most one frame. The debug overlay measures this. Tell players to run uncapped or at 240+ FPS during play (about 4 ms of error). Keep rendering fast so this holds.
 - Every frame, record an aim sample (song time, yaw, pitch → crosshair point on the screen plane). Slides and flicks are judged from these samples. Flicks test the line between two samples, so fast swipes at low FPS still register.
 - Events go into a queue that the judge drains every frame. Every input event and aim sample is also appended to the replay: the mod sends input through `ReplayRecorder`, which records it and passes it to the judge ([REPLAY_FORMAT.md](REPLAY_FORMAT.md)).
 

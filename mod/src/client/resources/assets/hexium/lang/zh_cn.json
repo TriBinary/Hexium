@@ -8,5 +8,10 @@
   "hexium.difficulty.basic": "Basic",
   "hexium.difficulty.advanced": "Advanced",
   "hexium.difficulty.expert": "Expert",
-  "hexium.difficulty.master": "Master"
+  "hexium.difficulty.master": "Master",
+  "hexium.audio_test.title": "音频测试",
+  "hexium.audio_test.pause": "暂停",
+  "hexium.audio_test.resume": "继续",
+  "hexium.audio_test.rewind": "后退 3 秒",
+  "hexium.audio_test.failed": "无法播放歌曲：%s"
 }
