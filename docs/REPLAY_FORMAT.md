@@ -30,7 +30,7 @@ Each event starts with one byte, the kind in the high 4 bits and the index in th
 
 ## Rules
 
-- Times never go down, so a replay always runs forward. When a player resumes from pause and the notes rewind, input isn't judged or recorded until play passes the point where it paused.
+- Times never go down, so a replay always runs forward. When a player resumes from pause and the notes rewind, input isn't judged or recorded until play passes the point where it paused. A lane key that changed in between is recorded as changing at exactly that point.
 - Times, `x`, `y` and offset B are finite. Times may be negative: a play starts with a lead-in before the song.
 - A file holds at most 2,000,000 events, about 2 hours at 240 FPS. Reading stops at that size once decompressed, so a small file can't unpack into something huge.
 - A file whose contents have anything else wrong, including bytes left over after the last event, is rejected with a message. Reading never throws. Only the unpacked contents are checked, so bytes outside the gzip data are ignored.
@@ -41,4 +41,4 @@ The judge version is `JudgementConfig.JUDGE_VERSION`. Raise it whenever a change
 
 ## Recording
 
-The mod sends input through `ReplayRecorder`, which records each event and passes it to the judge, so a replay holds exactly what the judge saw. An event older than the current time is recorded as happening now, which is also how the judge treats it.
+The mod sends input through `PlayInput`, which holds the pause rule above, and on to `ReplayRecorder`, which records each event and passes it to the judge, so a replay holds exactly what the judge saw. An event older than the current time is recorded as happening now, which is also how the judge treats it.

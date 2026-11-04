@@ -1,8 +1,13 @@
 package net.trilleo.hexium.client.session
 
+import java.io.IOException
 import net.minecraft.client.Minecraft
+import net.minecraft.client.gui.components.toasts.SystemToast
+import net.minecraft.network.chat.Component
+import net.trilleo.hexium.Hexium
 import net.trilleo.hexium.client.play.PlaySession
 import net.trilleo.hexium.client.screen.StageMenuScreen
+import org.slf4j.LoggerFactory
 
 /**
  * The one switch between Hexium and vanilla. Every mixin and event hook returns early unless
@@ -10,6 +15,8 @@ import net.trilleo.hexium.client.screen.StageMenuScreen
  * exception, since it opens the menu. Only that menu may start a session.
  */
 object HexiumSession {
+	private val LOGGER = LoggerFactory.getLogger(Hexium.MOD_ID)
+
 	@Volatile
 	private var active = false
 	private var play: PlaySession? = null
@@ -30,6 +37,34 @@ object HexiumSession {
 	@JvmStatic
 	fun frame() {
 		play?.frame()
+	}
+
+	/** Starts the chart again on the stage that's already here. If it can't be read, the player stays where they are. */
+	fun retry() {
+		val old = play ?: return
+		val minecraft = Minecraft.getInstance()
+		val next = try {
+			old.loadAgain()
+		} catch (e: IOException) {
+			cantRetry(minecraft, e)
+			return
+		} catch (e: RuntimeException) {
+			cantRetry(minecraft, e)
+			return
+		}
+		play = next
+		old.close()
+		minecraft.gui.setScreen(null)
+	}
+
+	private fun cantRetry(minecraft: Minecraft, cause: Exception) {
+		LOGGER.warn("Can't play the chart again", cause)
+		SystemToast.add(
+			minecraft.gui.toastManager(),
+			SystemToast.SystemToastId.PACK_LOAD_FAILURE,
+			Component.translatable("hexium.menu.cant_play"),
+			Component.literal(cause.message.orEmpty()),
+		)
 	}
 
 	/** Render thread only. */

@@ -5,6 +5,7 @@ import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 import net.trilleo.hexium.client.play.PlaySettings
+import net.trilleo.hexium.client.session.HexiumSession
 import net.trilleo.hexium.client.session.StageWorld
 
 /** What Esc opens on the stage, in place of vanilla's pause menu. */
@@ -17,11 +18,15 @@ class StageMenuScreen : Screen(Component.translatable("menu.paused")) {
 				.bounds(x, y, BUTTON_WIDTH, BUTTON_HEIGHT).build(),
 		)
 		addRenderableWidget(
-			Button.builder(Component.translatable("hexium.stage.leave")) { StageWorld.leave(minecraft) }
+			Button.builder(Component.translatable("hexium.results.retry")) { HexiumSession.retry() }
 				.bounds(x, y + ROW, BUTTON_WIDTH, BUTTON_HEIGHT).build(),
 		)
-		addStepButtons(y + 2 * ROW + GROUP_GAP) { PlaySettings.changeNoteSpeed(it) }
-		addStepButtons(y + 3 * ROW + GROUP_GAP) { PlaySettings.changeVisualOffset(it) }
+		addRenderableWidget(
+			Button.builder(Component.translatable("hexium.stage.leave")) { StageWorld.leave(minecraft) }
+				.bounds(x, y + 2 * ROW, BUTTON_WIDTH, BUTTON_HEIGHT).build(),
+		)
+		addStepButtons(y + 3 * ROW + GROUP_GAP) { PlaySettings.changeNoteSpeed(it) }
+		addStepButtons(y + 4 * ROW + GROUP_GAP) { PlaySettings.changeVisualOffset(it) }
 	}
 
 	private fun addStepButtons(y: Int, change: (Int) -> Unit) {
@@ -41,9 +46,9 @@ class StageMenuScreen : Screen(Component.translatable("menu.paused")) {
 		val y = height / 2 - BUTTON_HEIGHT
 		graphics.centeredText(font, title, width / 2, y - TITLE_ABOVE, TEXT_COLOR)
 		val noteSpeed = Component.translatable("hexium.stage.note_speed", PlaySettings.noteSpeed)
-		graphics.centeredText(font, noteSpeed, width / 2, y + 2 * ROW + GROUP_GAP + LABEL_DOWN, TEXT_COLOR)
+		graphics.centeredText(font, noteSpeed, width / 2, y + 3 * ROW + GROUP_GAP + LABEL_DOWN, TEXT_COLOR)
 		val visualOffset = Component.translatable("hexium.stage.visual_offset", PlaySettings.visualOffsetMs)
-		graphics.centeredText(font, visualOffset, width / 2, y + 3 * ROW + GROUP_GAP + LABEL_DOWN, TEXT_COLOR)
+		graphics.centeredText(font, visualOffset, width / 2, y + 4 * ROW + GROUP_GAP + LABEL_DOWN, TEXT_COLOR)
 	}
 
 	private companion object {

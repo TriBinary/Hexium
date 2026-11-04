@@ -54,6 +54,8 @@ Hexium is client-only (`"environment": "client"` in `fabric.mod.json`), so nearl
 - Every frame, record an aim sample (song time, yaw, pitch → crosshair point on the screen plane). Slides and flicks are judged from these samples. Flicks test the line between two samples, so fast swipes at low FPS still register.
 - Events go into a fixed ring that the play loop (`PlaySession`) drains at the start of every frame, before anything reads the time. A play has a 3-second lead-in with the clock running before the music, and stays open 2 seconds after the last note.
 - Until sky notes exist, the aim sample is a fixed mid-screen point, on the same code path.
+- Pausing stops the song and clock together. Resuming goes back 3 seconds, or to before the song if that's where it lands, and plays on from there under a 3-2-1 countdown. `PlayInput` in `core` holds the rule: nothing is judged or recorded until the song is back at the pause point, and any lane key that changed in between is pressed or released at exactly that time. Keys are read while the pause screen is open too, so this knows which are really down. Notes already judged stay hidden during the countdown, and so does the part of a hold already played.
+- A finished play opens `ResultsScreen` and saves its replay. Retry, on that screen and the pause screen, loads a new `PlaySession` for the same chart and keeps the stage. Leaving or retrying part way through saves nothing.
 - Events go through the judge every frame. Every input event and aim sample is also appended to the replay: the mod sends input through `ReplayRecorder`, which records it and passes it to the judge ([REPLAY_FORMAT.md](REPLAY_FORMAT.md)).
 
 ## Rendering
@@ -67,4 +69,4 @@ Hexium is client-only (`"environment": "client"` in `fabric.mod.json`), so nearl
 
 ## Local data
 
-`.minecraft/hexium/` holds `charts/` (one folder per chart package; the mod also bundles a test pack in `hexium_packs/`), `replays/`, `scores.json` (best scores per chart) and `settings.json`. That's enough for v1. A real database only lives on the server.
+`.minecraft/hexium/` holds `charts/` (one folder per chart package; the mod also bundles a test pack in `hexium_packs/`), `replays/` (one `<chart>-<difficulty>-<date>-<time>.hexreplay` per finished play, never cleaned up for now), `scores.json` (best scores per chart) and `settings.json`. That's enough for v1. A real database only lives on the server.

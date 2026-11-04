@@ -2,6 +2,7 @@ package net.trilleo.hexium.gametest
 
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext
+import java.nio.file.Files
 import net.minecraft.client.CameraType
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.TitleScreen
@@ -17,6 +18,7 @@ import net.trilleo.hexium.client.play.PlaySettings
 import net.trilleo.hexium.client.play.TrackRenderer
 import net.trilleo.hexium.client.play.PlaySession
 import net.trilleo.hexium.client.screen.HexiumMenuScreen
+import net.trilleo.hexium.client.screen.ResultsScreen
 import net.trilleo.hexium.client.screen.StageMenuScreen
 import net.trilleo.hexium.client.session.HexiumSession
 import net.trilleo.hexium.client.session.StageGeometry
@@ -24,6 +26,8 @@ import net.trilleo.hexium.core.chart.Note
 import net.trilleo.hexium.core.chart.TimingMap
 import net.trilleo.hexium.core.judge.ClearLamp
 import net.trilleo.hexium.core.judge.Judgement
+import net.trilleo.hexium.core.replay.ReplayFile
+import net.trilleo.hexium.core.replay.ReplayEvent
 import net.trilleo.hexium.core.replay.ReplayJudge
 import org.lwjgl.sdl.SDLTimer
 
@@ -142,7 +146,19 @@ class HexiumClientGameTest : FabricClientGameTest {
 		context.clickScreenButton("hexium.difficulty.basic")
 		context.waitFor({ HexiumSession.play()?.state == PlaySession.State.PLAYING }, LOAD_TICKS)
 		val play = HexiumSession.play()!!
-		pauseAndCheckTimeStops(context, play)
+		// A tap in the same frame as the pause came before it, so it must not be lost.
+		context.runOnClient<RuntimeException> {
+			val now = SDLTimer.SDL_GetTicksNS()
+			LaneInput.push(TAP_BEFORE_PAUSE_LANE, true, now)
+			LaneInput.push(TAP_BEFORE_PAUSE_LANE, false, now)
+		}
+		pauseAndCheckTimeStops(context, play, "lead_in")
+		context.runOnClient<RuntimeException> {
+			val replay = play.recorder.toReplay()
+			check((0 until replay.eventCount).any { replay.event(it) == ReplayEvent.LANE_DOWN && replay.index(it) == TAP_BEFORE_PAUSE_LANE }) {
+				"a tap just before the pause was lost"
+			}
+		}
 
 		val script = script(play)
 		var next = 0
@@ -166,7 +182,7 @@ class HexiumClientGameTest : FabricClientGameTest {
 			bot(play.clock.songTimeMs)
 			play.clock.songTimeMs >= PAUSE_AT_MS
 		}, SONG_TICKS)
-		pauseAndCheckTimeStops(context, play)
+		pauseAndCheckTimeStops(context, play, "countdown")
 		pauseSettingsChange(context, play)
 		context.waitFor({
 			bot(play.clock.songTimeMs)
@@ -177,7 +193,8 @@ class HexiumClientGameTest : FabricClientGameTest {
 			bot(play.clock.songTimeMs)
 			play.state == PlaySession.State.FINISHED
 		}, SONG_TICKS)
-		context.takeScreenshot("finished")
+		context.waitForScreen(ResultsScreen::class.java)
+		context.takeScreenshot("results")
 		context.runOnClient<RuntimeException> {
 			val judge = play.judge
 			check(next == script.size) { "the play ended before the script did" }
@@ -190,13 +207,29 @@ class HexiumClientGameTest : FabricClientGameTest {
 			check(judge.score == PERFECT_SCORE) { "score ${judge.score}" }
 			check(judge.count(Judgement.MISS) == 0) { "${judge.count(Judgement.MISS)} Misses from a bot that hit everything" }
 			check(judge.score > 0) { "no score" }
-			val replay = play.recorder.toReplay()
+			val saved = play.savedReplay ?: error("the replay wasn't saved")
+			val replay = ReplayFile.read(Files.readAllBytes(saved)).replay ?: error("the saved replay can't be read")
 			check(replay.eventCount > judge.objectCount) { "only ${replay.eventCount} events recorded" }
 			val again = ReplayJudge.rejudge(play.chartFile, replay).judge!!
 			check(again.score == judge.score && again.maxCombo == judge.maxCombo) {
 				"the replay scored ${again.score}, live scored ${judge.score}"
 			}
 		}
+		retryAndLeave(context, play)
+	}
+
+	/** Retry starts the chart again without leaving the stage, from the results and from the pause screen. */
+	private fun retryAndLeave(context: ClientGameTestContext, finished: PlaySession) {
+		context.clickScreenButton("hexium.results.retry")
+		context.waitFor({ HexiumSession.play() !== finished && HexiumSession.play()?.state == PlaySession.State.PLAYING }, SETTLE_TICKS)
+		val second = HexiumSession.play()!!
+		context.runOnClient<RuntimeException> {
+			check(second.judge.judgedCount == 0 && second.clock.songTimeMs < 0.0) { "a retry didn't start from the top" }
+		}
+		context.runOnClient<RuntimeException> { it.pauseGame(false) }
+		context.waitForScreen(StageMenuScreen::class.java)
+		context.clickScreenButton("hexium.results.retry")
+		context.waitFor({ HexiumSession.play() !== second && HexiumSession.play()?.state == PlaySession.State.PLAYING }, SETTLE_TICKS)
 		context.runOnClient<RuntimeException> { it.pauseGame(false) }
 		context.waitForScreen(StageMenuScreen::class.java)
 		context.clickScreenButton("hexium.stage.leave")
@@ -224,7 +257,7 @@ class HexiumClientGameTest : FabricClientGameTest {
 		context.runOnClient<RuntimeException> { it.options.improvedTransparency().set(false) }
 	}
 
-	private fun pauseAndCheckTimeStops(context: ClientGameTestContext, play: PlaySession) {
+	private fun pauseAndCheckTimeStops(context: ClientGameTestContext, play: PlaySession, screenshot: String) {
 		context.runOnClient<RuntimeException> { it.pauseGame(false) }
 		context.waitForScreen(StageMenuScreen::class.java)
 		context.waitFor({ play.state == PlaySession.State.PAUSED }, SETTLE_TICKS)
@@ -233,8 +266,19 @@ class HexiumClientGameTest : FabricClientGameTest {
 		context.runOnClient<RuntimeException> {
 			check(play.clock.songTimeMs == pausedAt) { "time moved from $pausedAt to ${play.clock.songTimeMs} while paused" }
 		}
+		val judgedAtPause = context.computeOnClient<Int, RuntimeException> { play.judge.judgedCount }
 		context.setScreen { null }
-		context.waitFor({ play.state == PlaySession.State.PLAYING && play.clock.songTimeMs > pausedAt }, SETTLE_TICKS)
+		// Resuming goes back 3 seconds, and judging only reopens at the pause point.
+		context.waitFor({ play.state == PlaySession.State.REWINDING }, SETTLE_TICKS)
+		context.runOnClient<RuntimeException> {
+			check(play.clock.songTimeMs < pausedAt - MIN_REWIND_MS) { "resumed at ${play.clock.songTimeMs} from $pausedAt" }
+		}
+		context.takeScreenshot(screenshot)
+		context.waitFor({ play.state == PlaySession.State.PLAYING }, COUNTDOWN_TICKS)
+		context.runOnClient<RuntimeException> {
+			check(play.clock.songTimeMs >= pausedAt) { "judging reopened at ${play.clock.songTimeMs}, before $pausedAt" }
+			check(play.judge.judgedCount == judgedAtPause) { "something was judged during the countdown" }
+		}
 	}
 
 	/** Note speed and offset A are for the eye: the judge never hears of them, which the perfect score below shows. */
@@ -251,7 +295,8 @@ class HexiumClientGameTest : FabricClientGameTest {
 		}
 		context.takeScreenshot("pause_menu")
 		context.setScreen { null }
-		context.waitFor({ play.state == PlaySession.State.PLAYING }, SETTLE_TICKS)
+		context.waitFor({ play.state == PlaySession.State.REWINDING }, SETTLE_TICKS)
+		context.waitFor({ play.state == PlaySession.State.PLAYING }, COUNTDOWN_TICKS)
 	}
 
 	private class Press(val atMs: Double, val lane: Int, val down: Boolean)
@@ -328,6 +373,10 @@ class HexiumClientGameTest : FabricClientGameTest {
 
 		/** Between notes in basic.json. */
 		const val PAUSE_AT_MS = 3250.0
+
+		const val COUNTDOWN_TICKS = 100
+		const val TAP_BEFORE_PAUSE_LANE = 3
+		const val MIN_REWIND_MS = 2000.0
 
 		const val SCREEN_MIDDLE_HEIGHT = 3.0
 		const val MAX_PITCH_ERROR = 0.1

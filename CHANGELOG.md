@@ -31,6 +31,11 @@
     + Presses are timed from when the key went down, not when the game got round to it.
     + Taps and holds come down the four lanes to a judgement line, with each lane lighting up while its key is down.
     + The pause screen sets the note speed, which changes how far away notes appear but never their timing, and a visual offset, which shifts where notes are drawn relative to the music. These reset when you quit the game for now.
++ Pausing is now fair: resuming goes back 3 seconds and plays the song under a 3-2-1 countdown, and judging starts again exactly where you paused.
+    + Keys you changed while paused count from that moment, so you can get your fingers back in place.
++ Added a results screen with your score, clear lamp, judgement counts and best combo.
++ Added Retry, on the results and pause screens, which starts the chart again without reloading the stage.
++ Finished plays now save a replay in `.minecraft/hexium/replays`.
 + Added the stage: a plain floor with a raised platform you stand on, looking down the lanes, kept apart from your normal worlds.
     + You can look around, but moving, jumping and action keys are off while you're on it.
     + The hunger bar is hidden.

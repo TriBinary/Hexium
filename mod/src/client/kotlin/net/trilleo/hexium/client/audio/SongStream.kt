@@ -297,6 +297,9 @@ class SongStream private constructor(
 		AL10.alSourcePlay(source)
 	}
 
+	/** The stream this one took over from, while that may still be playing. */
+	private var replaced: SongStream? = null
+
 	override fun close() {
 		if (closed) return
 		closed = true
@@ -313,7 +316,9 @@ class SongStream private constructor(
 				MemoryUtil.memFree(ogg)
 			}
 		}
-		if (current === this) current = null
+		// A stream that failed to load hands the song back to the one still playing.
+		if (current === this) current = replaced?.takeUnless { it.closed }
+		replaced = null
 	}
 
 	companion object {
@@ -354,6 +359,7 @@ class SongStream private constructor(
 					val channels = if (info.channels() == 1) 1 else 2
 					val lengthMs = STBVorbis.stb_vorbis_stream_length_in_samples(decoder) * 1000.0 / rate
 					val stream = SongStream(ogg, decoder, rate, channels, lengthMs)
+					stream.replaced = current
 					current = stream
 					return stream
 				}

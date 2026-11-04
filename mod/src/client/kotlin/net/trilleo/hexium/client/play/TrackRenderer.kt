@@ -122,12 +122,13 @@ object TrackRenderer {
 			val start = GroundTrack.distance(track.startMs(i), drawMs, blocksPerSecond)
 			if (start > StageGeometry.TRACK_LENGTH) break
 			if (track.isHold(i)) {
-				// A body runs down to the line and stops there, shortening as it's played.
-				val near = maxOf(start, 0.0)
+				// A body runs down to the line and stops there, shortening as it's played. During the
+				// rewind after a pause, what was already played doesn't come round again.
+				val near = maxOf(start, 0.0, GroundTrack.distance(play.playedUntilMs, drawMs, blocksPerSecond))
 				val far = minOf(GroundTrack.distance(track.endMs(i), drawMs, blocksPerSecond), StageGeometry.TRACK_LENGTH)
 				if (far > near) {
 					val lane = track.lane(i)
-					val color = if (start <= 0.0 && play.isLaneDown(lane)) BODY_HELD else BODY
+					val color = if (near <= 0.0 && play.isLaneDown(lane)) BODY_HELD else BODY
 					val x = StageGeometry.laneCentreX(lane, laneCount)
 					// Split where the fade starts, or it would spread down the whole of a long body.
 					val fadeStart = StageGeometry.TRACK_LENGTH - FADE_LENGTH

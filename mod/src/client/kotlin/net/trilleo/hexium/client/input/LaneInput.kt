@@ -54,11 +54,9 @@ object LaneInput {
 		val play = HexiumSession.play() ?: return false
 		val lane = laneOf(SDL_KeyboardEvent.nscancode(event))
 		if (lane < 0 || !play.acceptingInput) return false
-		val isDown = SDL_KeyboardEvent.ndown(event)
-		val toGame = HexiumSession.noScreenOpen()
-		// A release while a screen is open still counts: the key is no longer held.
-		if ((toGame || !isDown) && !SDL_KeyboardEvent.nrepeat(event)) push(lane, isDown, SDL_KeyboardEvent.ntimestamp(event))
-		return toGame
+		// Taken while a screen is open too, since the pause rule needs to know which keys are down on resuming.
+		if (!SDL_KeyboardEvent.nrepeat(event)) push(lane, SDL_KeyboardEvent.ndown(event), SDL_KeyboardEvent.ntimestamp(event))
+		return HexiumSession.noScreenOpen()
 	}
 
 	fun push(lane: Int, isDown: Boolean, atNs: Long) {

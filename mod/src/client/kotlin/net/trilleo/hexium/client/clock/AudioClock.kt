@@ -32,7 +32,16 @@ class AudioClock(private val stream: SongStream) {
 
 	fun pause() {
 		stream.pause()
-		clock.pause(SDLTimer.SDL_GetTicksNS())
+		val now = SDLTimer.SDL_GetTicksNS()
+		clock.pause(now)
+		songTimeMs = clock.mapMs(now)
+	}
+
+	/** Goes back to [ms], which may be before the song, and carries on from there. Call while paused. */
+	fun playFrom(ms: Double) {
+		stream.seek(ms)
+		songTimeMs = ms
+		play()
 	}
 
 	fun seek(ms: Double) {

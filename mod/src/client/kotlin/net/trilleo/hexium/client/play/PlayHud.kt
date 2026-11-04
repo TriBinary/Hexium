@@ -10,7 +10,6 @@ import net.minecraft.util.FormattedCharSequence
 import net.minecraft.util.FormattedCharSink
 import net.trilleo.hexium.Hexium
 import net.trilleo.hexium.client.session.HexiumSession
-import net.trilleo.hexium.core.judge.ClearLamp
 import net.trilleo.hexium.core.judge.Judgement
 
 /**
@@ -27,8 +26,9 @@ object PlayHud {
 	private const val JUDGEMENT_ABOVE = 26
 	private const val DELTA_ABOVE = 14
 	private const val MARGIN = 6
-	private const val FINISHED_ABOVE = 30
-	private const val LINE_HEIGHT = 12
+	private const val COUNTDOWN_ABOVE = 26
+	private const val COUNTDOWN_SCALE = 4f
+	private const val MS_PER_SECOND = 1000.0
 	private const val ASCII = 128
 
 	/** Text prepared once, with its width. */
@@ -93,11 +93,10 @@ object PlayHud {
 	private val combo = NumberText()
 	private val score = NumberText()
 	private val delta = NumberText()
+	private val countdown = NumberText()
 
 	private var judgementText = arrayOfNulls<Prepared>(0)
-	private var lampText = arrayOfNulls<Prepared>(0)
 	private var readyText: Prepared? = null
-	private var finishedText: Prepared? = null
 
 	private var session: PlaySession? = null
 	private var seen = 0
@@ -116,15 +115,12 @@ object PlayHud {
 		judgementText = Array(Judgement.entries.size) {
 			Prepared(font, Component.translatable("hexium.judgement.${Judgement.entries[it].name.lowercase()}"))
 		}
-		lampText = Array(ClearLamp.entries.size) {
-			val lamp = ClearLamp.entries[it]
-			if (lamp == ClearLamp.NONE) null else Prepared(font, Component.translatable("hexium.lamp.${lamp.name.lowercase()}"))
-		}
 		readyText = Prepared(font, Component.translatable("hexium.play.ready"))
-		finishedText = Prepared(font, Component.translatable("hexium.play.finished"))
 	}
 
 	private fun draw(graphics: GuiGraphicsExtractor, play: PlaySession) {
+		// The results screen says all of this.
+		if (play.state == PlaySession.State.FINISHED) return
 		val font = Minecraft.getInstance().font
 		if (session !== play) {
 			session = play
@@ -144,8 +140,17 @@ object PlayHud {
 			drawCentred(graphics, font, readyText, centre, middle - JUDGEMENT_ABOVE, TEXT_COLOR)
 		}
 		graphics.text(font, score, graphics.guiWidth() - score.width - MARGIN, MARGIN, TEXT_COLOR)
+		if (play.state == PlaySession.State.REWINDING) {
+			last = null
+			countdown.set(Math.ceil((play.playedUntilMs - now) / MS_PER_SECOND).toInt().coerceAtLeast(1))
+			graphics.pose().pushMatrix()
+			graphics.pose().translate(centre.toFloat(), (middle - COUNTDOWN_ABOVE).toFloat())
+			graphics.pose().scale(COUNTDOWN_SCALE, COUNTDOWN_SCALE)
+			graphics.text(font, countdown, -countdown.width / 2, 0, TEXT_COLOR)
+			graphics.pose().popMatrix()
+		}
 
-		if (play.judge.combo > 1) {
+		if (play.judge.combo > 1 && play.state != PlaySession.State.REWINDING) {
 			graphics.pose().pushMatrix()
 			graphics.pose().translate(centre.toFloat(), (middle - COMBO_ABOVE).toFloat())
 			graphics.pose().scale(COMBO_SCALE, COMBO_SCALE)
@@ -156,10 +161,6 @@ object PlayHud {
 		if (judgement != null && now - lastAtMs < JUDGEMENT_SHOWN_MS) {
 			drawCentred(graphics, font, judgementText[judgement.ordinal], centre, middle - JUDGEMENT_ABOVE, JUDGEMENT_COLORS[judgement.ordinal])
 			graphics.text(font, delta, centre - delta.width / 2, middle - DELTA_ABOVE, TEXT_COLOR)
-		}
-		if (play.state == PlaySession.State.FINISHED) {
-			drawCentred(graphics, font, finishedText, centre, middle + FINISHED_ABOVE, TEXT_COLOR)
-			drawCentred(graphics, font, lampText[play.judge.clearLamp.ordinal], centre, middle + FINISHED_ABOVE + LINE_HEIGHT, TEXT_COLOR)
 		}
 	}
 

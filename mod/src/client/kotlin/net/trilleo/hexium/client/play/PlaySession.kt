@@ -2,6 +2,7 @@ package net.trilleo.hexium.client.play
 
 import java.io.IOException
 import java.nio.file.Files
+import java.nio.file.Path
 import net.minecraft.client.Minecraft
 import net.minecraft.sounds.SoundSource
 import net.trilleo.hexium.Hexium
@@ -9,6 +10,7 @@ import net.trilleo.hexium.client.audio.SongStream
 import net.trilleo.hexium.client.chart.ChartPack
 import net.trilleo.hexium.client.clock.AudioClock
 import net.trilleo.hexium.client.input.LaneInput
+import net.trilleo.hexium.client.screen.ResultsScreen
 import net.trilleo.hexium.core.chart.ChartFolder
 import net.trilleo.hexium.core.chart.ChartParser
 import net.trilleo.hexium.core.chart.ChartValidator
@@ -18,20 +20,24 @@ import net.trilleo.hexium.core.chart.GroundTrack
 import net.trilleo.hexium.core.chart.Severity
 import net.trilleo.hexium.core.judge.Judge
 import net.trilleo.hexium.core.judge.JudgeChart
+import net.trilleo.hexium.core.replay.PlayInput
 import net.trilleo.hexium.core.replay.Replay
 import net.trilleo.hexium.core.replay.ReplayRecorder
 import org.slf4j.LoggerFactory
 
 /**
  * One play of a chart. Each frame it reads the audio clock, then sends everything that happened
- * through [recorder], so a replay holds exactly what the judge saw. All the rules are in `core`.
+ * through [input] and on to [recorder], so a replay holds exactly what the judge saw. All the rules,
+ * including what a pause does, are in `core`.
  */
 class PlaySession private constructor(
+	private val pack: ChartPack,
 	val chart: DifficultyChart,
 	val chartFile: ByteArray,
 	private val stream: SongStream,
 ) : AutoCloseable {
-	enum class State { WAITING_FOR_STAGE, PLAYING, PAUSED, FINISHED }
+	/** [REWINDING] is the countdown after a pause: the song runs again, but input isn't judged yet. */
+	enum class State { WAITING_FOR_STAGE, PLAYING, PAUSED, REWINDING, FINISHED }
 
 	val judgeChart: JudgeChart = JudgeChart.compile(chart)
 	val clock = AudioClock(stream)
@@ -40,7 +46,18 @@ class PlaySession private constructor(
 	private val endMs = chart.lastNoteEndMs() + TAIL_MS
 	private val headJudged = BooleanArray(chart.notes.size)
 	private var judgedSeen = 0
-	private val laneDown = BooleanArray(chart.laneCount)
+	private val input = PlayInput(recorder, chart.laneCount)
+
+	/** Where the replay of this play went, once it has finished, or null if it couldn't be saved. */
+	var savedReplay: Path? = null
+		private set
+
+	val chartTitle: String
+		get() = pack.meta?.title.orEmpty()
+
+	/** Everything up to here has been played, so the rewind after a pause doesn't draw it again. */
+	val playedUntilMs: Double
+		get() = input.playedUntilMs
 
 	var state = State.WAITING_FOR_STAGE
 		private set
@@ -49,7 +66,7 @@ class PlaySession private constructor(
 		get() = recorder.judge
 
 	val acceptingInput: Boolean
-		get() = state == State.PLAYING || state == State.PAUSED
+		get() = state == State.PLAYING || state == State.PAUSED || state == State.REWINDING
 
 	/** False until the clock has its first time, when there's nothing right to draw. */
 	val notesMoving: Boolean
@@ -58,7 +75,7 @@ class PlaySession private constructor(
 	/** True once a tap or hold head, by its index in the chart's notes, has been judged. A hold's ticks don't count. */
 	fun isHeadJudged(chartNote: Int): Boolean = headJudged[chartNote]
 
-	fun isLaneDown(lane: Int): Boolean = laneDown[lane]
+	fun isLaneDown(lane: Int): Boolean = acceptingInput && input.isLaneDown(lane)
 
 	private fun expectedEvents(): Int {
 		val seconds = (stream.lengthMs + LEAD_IN_MS + TAIL_MS) / 1000.0
@@ -77,29 +94,32 @@ class PlaySession private constructor(
 				clock.playAfter(LEAD_IN_MS)
 				state = State.PLAYING
 			}
-			State.PLAYING -> if (screenOpen) {
+			State.PLAYING, State.REWINDING -> if (screenOpen) {
+				// These came before the pause, so they count at their own times.
+				drainInput()
 				clock.pause()
+				input.pause(clock.songTimeMs)
 				state = State.PAUSED
 			}
 			State.PAUSED -> if (!screenOpen) {
-				clock.play()
-				state = State.PLAYING
+				clock.playFrom(input.resume())
+				state = State.REWINDING
 			}
 			State.FINISHED -> return
 		}
 		clock.update()
 		drainInput()
-		if (state != State.PLAYING) {
+		if (state == State.PAUSED) {
 			readResults()
 			return
 		}
 		// Vanilla lowers the frame rate after a minute with no input it can see, and lane keys never reach it.
 		minecraft.framerateLimitTracker.onInputReceived()
 		val now = clock.songTimeMs
-		recorder.aimSample(now, REST_AIM, REST_AIM)
-		recorder.advanceTo(now)
+		input.frame(now, REST_AIM, REST_AIM)
+		if (state == State.REWINDING && input.isOpen) state = State.PLAYING
 		readResults()
-		if (now >= endMs) finish()
+		if (state == State.PLAYING && now >= endMs) finish(minecraft)
 	}
 
 	private fun readResults() {
@@ -111,22 +131,24 @@ class PlaySession private constructor(
 
 	private fun drainInput() {
 		while (LaneInput.hasEvent) {
-			val songMs = clock.songTimeAt(LaneInput.timeNs)
-			laneDown[LaneInput.lane] = LaneInput.down
-			if (LaneInput.down) recorder.pressLane(LaneInput.lane, songMs) else recorder.releaseLane(LaneInput.lane, songMs)
+			input.lane(LaneInput.lane, LaneInput.down, clock.songTimeAt(LaneInput.timeNs))
 			LaneInput.next()
 		}
 	}
 
-	private fun finish() {
+	private fun finish(minecraft: Minecraft) {
 		recorder.finish()
 		readResults()
-		// Input stops here, so a release would never arrive.
-		laneDown.fill(false)
 		clock.pause()
 		state = State.FINISHED
 		LOGGER.info("Finished with score {}, max combo {}, lamp {}", judge.score, judge.maxCombo, judge.clearLamp)
+		// A cut-short replay would re-judge to a different result.
+		if (!recorder.isFull) savedReplay = ReplayFolder.save(pack.meta?.id ?: UNKNOWN_CHART, chart.difficulty, recorder.toReplay())
+		minecraft.gui.setScreen(ResultsScreen(this))
 	}
+
+	/** The same chart again from the start. Throws as [load] does. */
+	fun loadAgain(): PlaySession = load(pack, chart.difficulty)
 
 	override fun close() {
 		stream.close()
@@ -135,6 +157,7 @@ class PlaySession private constructor(
 	companion object {
 		private val LOGGER = LoggerFactory.getLogger(Hexium.MOD_ID)
 		private const val LEAD_IN_MS = 3000.0
+		private const val UNKNOWN_CHART = "chart"
 
 		/** How long after the last note the play stays open. */
 		private const val TAIL_MS = 2000.0
@@ -157,7 +180,7 @@ class PlaySession private constructor(
 			try {
 				val problem = ChartValidator.validateChart(chart, stream.lengthMs).firstOrNull { it.severity == Severity.ERROR }
 				if (problem != null) throw IOException(problem.toString())
-				return PlaySession(chart, bytes, stream)
+				return PlaySession(pack, chart, bytes, stream)
 			} catch (e: Exception) {
 				stream.close()
 				throw e

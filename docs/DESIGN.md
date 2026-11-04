@@ -57,7 +57,7 @@ Everything is judged on one plane: the transparent screen in front of the player
 - A sky tap pressed with the wrong button is ignored by that note. It neither hits nor breaks it.
 - One press resolves at most one note: the earliest unjudged note in range, by timing.
 - Mouse sensitivity during play is the mod's own setting. It applies on top of Minecraft's raw mouse input, so menu feel doesn't change.
-- Pause (Esc) pauses the audio and the clock together. Resuming has a 3-second countdown with the notes rewound a little, as most rhythm games do.
+- Pause (Esc) pauses the audio and the clock together. Resuming rewinds the song 3 seconds and plays it under a 3-2-1 countdown, as most rhythm games do. Judging reopens exactly at the pause point, and any lane key changed in between counts from there ([REPLAY_FORMAT.md](REPLAY_FORMAT.md)).
 
 ### Aiming with real camera rotation
 
