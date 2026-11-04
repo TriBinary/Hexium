@@ -58,8 +58,10 @@ Hexium is client-only (`"environment": "client"` in `fabric.mod.json`), so nearl
 
 ## Rendering
 
-- Hook Fabric's world-render event for 26.3 (check the exact name in Fabric's 26.x docs, since rendering APIs changed). Draw only notes inside the visible time window.
-- Notes are block models (note block styles per type) batched into one vertex buffer per frame. Hold bodies are stretched quads, slide paths are ribbons, and the screen is a translucent pane with a frame.
+- `TrackRenderer` draws through Fabric's `LevelRenderEvents.COLLECT_SUBMITS` and `submitCustomGeometry`, never raw OpenGL, since 26.3 can run on Vulkan. Only notes inside the visible time window are drawn: `GroundTrack` in `core` holds them in time order and finds where to start, and every position is worked out fresh from draw time, so a note can't drift from the clock. A note's distance up the lane is `(note time − draw time) × note speed`, and speed never changes when it arrives.
+- For now the render type doesn't write depth and, with classic transparency, sorts quads by their centres, so a long floor quad could paint over a note behind its middle. So the floor, hold bodies and notes are each submitted in their own order, which are drawn in turn, and a note only emits the faces the camera can see. Improved transparency (the Fabulous preset) draws these on a different path; the game test takes a screenshot of it to check by eye. A note goes once the judge has its head, and a hold's body stops at the line, shortening as it plays. Vertices are relative to the camera on an untransformed pose, as vanilla's entities are, so no matrix is applied per vertex.
+- Notes are plain coloured cuboids until Milestone 5 brings block models (note block styles per type). Hold bodies are stretched quads, slide paths will be ribbons, and the screen will be a translucent pane with a frame.
+- Note speed and visual offset A live in `PlaySettings`, changed from the pause screen. They reach only `TrackRenderer`, so the judge and replays never see them.
 - Hit effects are client-only particles and a short sound, with a hit-sound volume setting.
 - Performance budget: 240 FPS with 300 notes on screen on a mid-range GPU. Add a debug overlay showing clock drift, frame time and input-to-judgement delay from Milestone 2.
 

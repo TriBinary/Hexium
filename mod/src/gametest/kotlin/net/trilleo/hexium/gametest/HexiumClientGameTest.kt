@@ -12,6 +12,8 @@ import net.minecraft.world.Difficulty
 import net.minecraft.world.level.GameType
 import net.minecraft.world.level.gamerules.GameRules
 import net.trilleo.hexium.client.input.LaneInput
+import net.trilleo.hexium.client.play.PlaySettings
+import net.trilleo.hexium.client.play.TrackRenderer
 import net.trilleo.hexium.client.play.PlaySession
 import net.trilleo.hexium.client.screen.HexiumMenuScreen
 import net.trilleo.hexium.client.screen.StageMenuScreen
@@ -33,6 +35,7 @@ class HexiumClientGameTest : FabricClientGameTest {
 		context.runOnClient<RuntimeException> { it.options.getSoundSourceOptionInstance(SoundSource.MASTER).set(0.0) }
 		theStageLocksThePlayerAndLeavesCleanly(context)
 		aChartPlaysToTheEndAndItsReplayMatches(context)
+		notesDrawWithImprovedTransparency(context)
 		normalWorldsAreUntouched(context)
 	}
 
@@ -146,9 +149,21 @@ class HexiumClientGameTest : FabricClientGameTest {
 		}
 		context.waitFor({
 			bot(play.clock.songTimeMs)
+			play.clock.songTimeMs >= NOTES_IN_VIEW_MS
+		}, SONG_TICKS)
+		context.takeScreenshot("notes")
+		context.runOnClient<RuntimeException> { check(TrackRenderer.notesDrawn > 0) { "no notes drawn on the way to the first one" } }
+		context.waitFor({
+			bot(play.clock.songTimeMs)
 			play.clock.songTimeMs >= PAUSE_AT_MS
 		}, SONG_TICKS)
 		pauseAndCheckTimeStops(context, play)
+		pauseSettingsChange(context, play)
+		context.waitFor({
+			bot(play.clock.songTimeMs)
+			play.clock.songTimeMs >= HOLD_IN_PLAY_MS
+		}, SONG_TICKS)
+		context.takeScreenshot("hold")
 		context.waitFor({
 			bot(play.clock.songTimeMs)
 			play.state == PlaySession.State.FINISHED
@@ -181,6 +196,25 @@ class HexiumClientGameTest : FabricClientGameTest {
 		context.waitForScreen(TitleScreen::class.java)
 	}
 
+	/** The Fabulous preset's transparency draws on another path, which can only be judged by eye. */
+	private fun notesDrawWithImprovedTransparency(context: ClientGameTestContext) {
+		context.runOnClient<RuntimeException> { it.options.improvedTransparency().set(true) }
+		context.clickScreenButton("hexium.title_button")
+		context.waitForScreen(HexiumMenuScreen::class.java)
+		context.clickScreenButton("hexium.difficulty.basic")
+		context.waitFor({ HexiumSession.play()?.state == PlaySession.State.PLAYING }, LOAD_TICKS)
+		val play = HexiumSession.play()!!
+		context.waitFor({ play.clock.songTimeMs >= HOLD_ON_THE_WAY_MS }, SONG_TICKS)
+		context.takeScreenshot("improved_transparency")
+		context.runOnClient<RuntimeException> { it.pauseGame(false) }
+		context.waitForScreen(StageMenuScreen::class.java)
+		context.clickScreenButton("hexium.stage.leave")
+		context.waitForScreen(HexiumMenuScreen::class.java)
+		context.clickScreenButton("gui.back")
+		context.waitForScreen(TitleScreen::class.java)
+		context.runOnClient<RuntimeException> { it.options.improvedTransparency().set(false) }
+	}
+
 	private fun pauseAndCheckTimeStops(context: ClientGameTestContext, play: PlaySession) {
 		context.runOnClient<RuntimeException> { it.pauseGame(false) }
 		context.waitForScreen(StageMenuScreen::class.java)
@@ -192,6 +226,23 @@ class HexiumClientGameTest : FabricClientGameTest {
 		}
 		context.setScreen { null }
 		context.waitFor({ play.state == PlaySession.State.PLAYING && play.clock.songTimeMs > pausedAt }, SETTLE_TICKS)
+	}
+
+	/** Note speed and offset A are for the eye: the judge never hears of them, which the perfect score below shows. */
+	private fun pauseSettingsChange(context: ClientGameTestContext, play: PlaySession) {
+		context.runOnClient<RuntimeException> { it.pauseGame(false) }
+		context.waitForScreen(StageMenuScreen::class.java)
+		context.waitFor({ play.state == PlaySession.State.PAUSED }, SETTLE_TICKS)
+		// This finds the first row's button, the note speed. Offset A has the same buttons on the next row.
+		context.clickScreenButton("hexium.stage.more")
+		context.waitTick()
+		context.runOnClient<RuntimeException> {
+			check(PlaySettings.noteSpeed > PlaySettings.DEFAULT_NOTE_SPEED) { "the note speed button did nothing" }
+			PlaySettings.changeVisualOffset(VISUAL_OFFSET_STEPS)
+		}
+		context.takeScreenshot("pause_menu")
+		context.setScreen { null }
+		context.waitFor({ play.state == PlaySession.State.PLAYING }, SETTLE_TICKS)
 	}
 
 	private class Press(val atMs: Double, val lane: Int, val down: Boolean)
@@ -220,6 +271,7 @@ class HexiumClientGameTest : FabricClientGameTest {
 		context.worldBuilder().create().use { world ->
 			world.connection.waitForChunksRender()
 			context.runOnClient<RuntimeException> { check(!HexiumSession.active()) { "a session in a normal world" } }
+			val trackFrames = context.computeOnClient<Long, RuntimeException> { TrackRenderer.framesDrawn }
 			val start = position(context)
 			context.input.holdKey { it.keyUp }
 			context.waitTicks(HOLD_TICKS)
@@ -234,6 +286,9 @@ class HexiumClientGameTest : FabricClientGameTest {
 			context.waitTicks(SETTLE_TICKS)
 			context.runOnClient<RuntimeException> {
 				check(it.player!!.inventory.selectedSlot != 3) { "the wheel doesn't work in a normal world" }
+			}
+			context.runOnClient<RuntimeException> {
+				check(TrackRenderer.framesDrawn == trackFrames) { "the track was drawn in a normal world" }
 			}
 			context.input.pressKey { it.keyInventory }
 			context.waitForScreen(InventoryScreen::class.java)
@@ -264,5 +319,16 @@ class HexiumClientGameTest : FabricClientGameTest {
 
 		/** Between notes in basic.json. */
 		const val PAUSE_AT_MS = 3250.0
+
+		const val VISUAL_OFFSET_STEPS = 10
+
+		/** A hold and taps are in view, with the taps in the lanes either side of it. */
+		const val HOLD_ON_THE_WAY_MS = 3400.0
+
+		/** The first note in basic.json is at 2000 ms. */
+		const val NOTES_IN_VIEW_MS = 1500.0
+
+		/** During its first hold, 4000 to 5000 ms in the second lane. */
+		const val HOLD_IN_PLAY_MS = 4500.0
 	}
 }

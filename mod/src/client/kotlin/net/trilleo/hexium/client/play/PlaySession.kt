@@ -14,6 +14,7 @@ import net.trilleo.hexium.core.chart.ChartParser
 import net.trilleo.hexium.core.chart.ChartValidator
 import net.trilleo.hexium.core.chart.Difficulty
 import net.trilleo.hexium.core.chart.DifficultyChart
+import net.trilleo.hexium.core.chart.GroundTrack
 import net.trilleo.hexium.core.chart.Severity
 import net.trilleo.hexium.core.judge.Judge
 import net.trilleo.hexium.core.judge.JudgeChart
@@ -35,7 +36,11 @@ class PlaySession private constructor(
 	val judgeChart: JudgeChart = JudgeChart.compile(chart)
 	val clock = AudioClock(stream)
 	val recorder = ReplayRecorder(judgeChart, Replay.hashOf(chartFile), JUDGEMENT_OFFSET_MS, expectedEvents())
+	val track = GroundTrack(chart)
 	private val endMs = chart.lastNoteEndMs() + TAIL_MS
+	private val headJudged = BooleanArray(chart.notes.size)
+	private var judgedSeen = 0
+	private val laneDown = BooleanArray(chart.laneCount)
 
 	var state = State.WAITING_FOR_STAGE
 		private set
@@ -45,6 +50,15 @@ class PlaySession private constructor(
 
 	val acceptingInput: Boolean
 		get() = state == State.PLAYING || state == State.PAUSED
+
+	/** False until the clock has its first time, when there's nothing right to draw. */
+	val notesMoving: Boolean
+		get() = state != State.WAITING_FOR_STAGE
+
+	/** True once a tap or hold head, by its index in the chart's notes, has been judged. A hold's ticks don't count. */
+	fun isHeadJudged(chartNote: Int): Boolean = headJudged[chartNote]
+
+	fun isLaneDown(lane: Int): Boolean = laneDown[lane]
 
 	private fun expectedEvents(): Int {
 		val seconds = (stream.lengthMs + LEAD_IN_MS + TAIL_MS) / 1000.0
@@ -75,18 +89,30 @@ class PlaySession private constructor(
 		}
 		clock.update()
 		drainInput()
-		if (state != State.PLAYING) return
+		if (state != State.PLAYING) {
+			readResults()
+			return
+		}
 		// Vanilla lowers the frame rate after a minute with no input it can see, and lane keys never reach it.
 		minecraft.framerateLimitTracker.onInputReceived()
 		val now = clock.songTimeMs
 		recorder.aimSample(now, REST_AIM, REST_AIM)
 		recorder.advanceTo(now)
+		readResults()
 		if (now >= endMs) finish()
+	}
+
+	private fun readResults() {
+		while (judgedSeen < judge.judgedCount) {
+			if (judge.judgedIsPress(judgedSeen)) headJudged[judge.judgedNote(judgedSeen)] = true
+			judgedSeen++
+		}
 	}
 
 	private fun drainInput() {
 		while (LaneInput.hasEvent) {
 			val songMs = clock.songTimeAt(LaneInput.timeNs)
+			laneDown[LaneInput.lane] = LaneInput.down
 			if (LaneInput.down) recorder.pressLane(LaneInput.lane, songMs) else recorder.releaseLane(LaneInput.lane, songMs)
 			LaneInput.next()
 		}
@@ -94,6 +120,9 @@ class PlaySession private constructor(
 
 	private fun finish() {
 		recorder.finish()
+		readResults()
+		// Input stops here, so a release would never arrive.
+		laneDown.fill(false)
 		clock.pause()
 		state = State.FINISHED
 		LOGGER.info("Finished with score {}, max combo {}, lamp {}", judge.score, judge.maxCombo, judge.clearLamp)

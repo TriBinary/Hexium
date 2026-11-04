@@ -29,7 +29,8 @@
 
 + Ground charts can now be played: press A S D F (the same positions on any keyboard layout) in time with the song, with combo, judgement and score on screen.
     + Presses are timed from when the key went down, not when the game got round to it.
-    + The notes themselves aren't drawn yet, so for now it's played by ear.
+    + Taps and holds come down the four lanes to a judgement line, with each lane lighting up while its key is down.
+    + The pause screen sets the note speed, which changes how far away notes appear but never their timing, and a visual offset, which shifts where notes are drawn relative to the music. These reset when you quit the game for now.
 + Added the stage: a plain floor you stand on, kept apart from your normal worlds.
     + You can look around, but moving, jumping and action keys are off while you're on it.
     + The hunger bar is hidden.

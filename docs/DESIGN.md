@@ -35,9 +35,9 @@ Everything is judged on one plane: the transparent screen in front of the player
 
 - The player is locked on the stand spot (the red circle), in adventure mode. Movement, jumping, sneaking, hotbar and inventory keys are suppressed during play. The hunger bar is hidden.
 - Screen plane: 8 blocks in front of the player's eyes, about 12 blocks wide and 6 tall, with its bottom edge on the floor.
-- Ground lanes: 4 lanes lie on the floor and run away from the player past the screen into the distance. Notes spawn far down the lanes and slide toward the bottom edge of the screen.
+- Ground lanes: 4 lanes, each 2 blocks wide, lie on the floor and run from the player past the screen, 64 blocks beyond it, into the distance. Notes spawn far down the lanes and slide toward the bottom edge of the screen.
 - Sky notes: they fly straight toward the screen along the depth axis, visible through it, and are judged when they reach their (x, y) spot on the screen.
-- Note speed ("HiSpeed") is a player setting. It changes how far away notes appear, never their timing.
+- Note speed ("HiSpeed") is a player setting in blocks per second, 25 by default. It changes how far away notes appear, never their timing.
 - Rest view: centred on the screen with the whole ground track visible. Yaw and pitch are clamped to the screen's edges plus a small margin, so the player can't spin away.
 
 ### Note types
