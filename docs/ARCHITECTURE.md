@@ -34,7 +34,7 @@ Hexium is client-only (`"environment": "client"` in `fabric.mod.json`), so nearl
 ## Session gating ("normal worlds are untouched")
 
 - The title screen gets one extra button that opens the mod's menu. That menu is the only place a `HexiumSession` is ever created.
-- Every mixin and event hook starts with `if (!HexiumSession.active()) return;`. Joining a normal world or server means no session, so vanilla behaviour stays as it was.
+- Every mixin and event hook starts with `if (!HexiumSession.active()) return;`, except the title screen button, which only adds that button. Joining a normal world or server means no session, so vanilla behaviour stays as it was.
 - The stage is a template world bundled in the mod. It's copied into the mod's own folder (for example `.minecraft/hexium/stages/`), not `saves/`, so it never shows up in the vanilla world list. It's loaded on the integrated server with frozen game rules: no daylight cycle, no mobs, no random ticks, no weather.
 - The player entity is placed on the stand spot and locked. Gameplay never depends on the server; the world is just scenery.
 
@@ -60,4 +60,4 @@ Hexium is client-only (`"environment": "client"` in `fabric.mod.json`), so nearl
 
 ## Local data
 
-`.minecraft/hexium/` holds `charts/` (one folder per chart package), `replays/`, `scores.json` (best scores per chart) and `settings.json`. That's enough for v1. A real database only lives on the server.
+`.minecraft/hexium/` holds `charts/` (one folder per chart package; the mod also bundles a test pack in `hexium_packs/`), `replays/`, `scores.json` (best scores per chart) and `settings.json`. That's enough for v1. A real database only lives on the server.

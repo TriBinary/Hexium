@@ -13,9 +13,10 @@ dependencies {
 }
 
 tasks.test {
-	// The tests read the example charts and the spec's examples.
+	// The tests read the example charts, the spec's examples and the mod's test pack.
 	inputs.dir(rootProject.file("docs/examples"))
 	inputs.file(rootProject.file("docs/CHART_FORMAT.md"))
+	inputs.dir(rootProject.file("mod/src/client/resources/hexium_packs"))
 
 	// Regenerates the golden replays after a deliberate change (docs/DEVELOPMENT.md).
 	systemProperty("hexium.updateGolden", providers.systemProperty("hexium.updateGolden").getOrElse("false"))

@@ -96,6 +96,7 @@ Errors:
 - Every note and BPM entry has a finite time, so a note can always be judged. A difficulty file's name matches its `difficulty` (checked by whatever reads the files).
 - A chart has at most 1,000,000 judged objects (see [JUDGEMENT.md](JUDGEMENT.md)), so a huge hold can't exhaust memory when its ticks are built.
 - `meta.json` follows the rules in its section above, and every chart's `difficulty` is listed in it.
+- A chart folder has a `meta.json` and an `audio.ogg`. Hidden files, such as the `._basic.json` that macOS leaves in archives, aren't read as charts.
 
 Warning (not an error):
 

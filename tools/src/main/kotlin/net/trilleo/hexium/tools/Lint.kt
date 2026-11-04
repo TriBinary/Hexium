@@ -3,24 +3,12 @@ package net.trilleo.hexium.tools
 import java.io.File
 import java.io.IOException
 import java.io.PrintStream
+import net.trilleo.hexium.core.chart.ChartFolder
 import net.trilleo.hexium.core.chart.ChartIssue
 import net.trilleo.hexium.core.chart.ChartLimits
 import net.trilleo.hexium.core.chart.ChartMeta
-import net.trilleo.hexium.core.chart.ChartPackage
-import net.trilleo.hexium.core.chart.ChartParser
-import net.trilleo.hexium.core.chart.ChartValidator
 import net.trilleo.hexium.core.chart.DifficultyChart
-import net.trilleo.hexium.core.chart.IssueCode
 import net.trilleo.hexium.core.chart.Severity
-
-private const val META_FILE = "meta.json"
-
-/** The package rules a folder adds on top of checking each file. */
-private val PACKAGE_CODES = setOf(
-	IssueCode.MISSING_DIFFICULTY_FILE,
-	IssueCode.UNLISTED_DIFFICULTY_FILE,
-	IssueCode.DUPLICATE_DIFFICULTY_FILE,
-)
 
 private class Tally(val out: PrintStream) {
 	var files = 0
@@ -47,7 +35,7 @@ internal fun lint(paths: List<String>, out: PrintStream): Int {
 		val file = File(path)
 		when {
 			file.isDirectory -> {
-				val charts = file.listFiles { f -> f.isFile && f.name.endsWith(".json") }.orEmpty().sortedBy { it.name }
+				val charts = file.listFiles { f -> f.isFile && ChartFolder.isChartFile(f.name) }.orEmpty().sortedBy { it.name }
 				if (charts.isEmpty()) {
 					out.println("$path: no .json files here")
 					badPath = true
@@ -84,7 +72,8 @@ private fun lintFolder(folder: File, files: List<File>, tally: Tally) {
 	// A file that couldn't be read has been reported already, and isn't missing.
 	val listed = meta ?: return
 	if (!allRead) return
-	val issues = ChartValidator.validatePackage(ChartPackage(listed, charts)).filter { it.code in PACKAGE_CODES }
+	val everything = folder.listFiles { f -> f.isFile }.orEmpty()
+	val issues = ChartFolder.folderIssues(listed, charts, everything.map { it.name }, everything.sumOf { it.length() })
 	tally.report(folder, issues)
 }
 
@@ -98,8 +87,7 @@ private fun lintFile(file: File, tally: Tally): Any? {
 }
 
 private fun readAndCheck(file: File, tally: Tally): Any? {
-	// A character is at most 4 bytes, so a longer file can't be within the limit. Don't try to read it.
-	if (file.length() > ChartLimits.MAX_JSON_FILE_CHARS * 4L) {
+	if (ChartFolder.isTooLargeToRead(file.length())) {
 		tally.error(file, "is ${file.length()} bytes, far over the limit of ${ChartLimits.MAX_JSON_FILE_CHARS} characters")
 		return null
 	}
@@ -109,17 +97,7 @@ private fun readAndCheck(file: File, tally: Tally): Any? {
 		tally.error(file, "can't be read: ${e.message}")
 		return null
 	}
-	if (file.name == META_FILE) {
-		val parsed = ChartParser.parseMeta(text)
-		tally.report(file, parsed.issues)
-		val meta = parsed.value ?: return null
-		tally.report(file, ChartValidator.validateMeta(meta))
-		return meta
-	}
-	val parsed = ChartParser.parseDifficulty(text)
-	tally.report(file, parsed.issues)
-	val chart = parsed.value ?: return null
-	tally.report(file, ChartValidator.validateChart(chart))
-	tally.report(file, ChartValidator.validateFileName(chart, file.name))
-	return chart
+	val result = ChartFolder.readFile(file.name, text)
+	tally.report(file, result.issues)
+	return result.meta ?: result.chart
 }

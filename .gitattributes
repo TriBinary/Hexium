@@ -1,5 +1,9 @@
 # The example chart tests compare text exactly, and the spec holds examples they read.
 docs/** text eol=lf
 
+# The test pack's basic.json must match docs/examples/basic.json byte for byte.
+mod/src/client/resources/hexium_packs/**/*.json text eol=lf
+mod/src/client/resources/hexium_packs/**/*.ogg binary
+
 # Golden replays and their results must stay byte for byte.
 core/src/test/resources/golden/** -text

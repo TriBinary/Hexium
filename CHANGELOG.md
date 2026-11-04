@@ -4,6 +4,13 @@
 
 ### New Features
 
+#### Menus
+
++ Added a Hexium button on the title screen that opens Hexium's menu.
+    + The menu lists every chart it finds, including a built-in Test Pattern and any folders in `.minecraft/hexium/charts`.
+    + Broken charts are marked and show their first problem, and the full list goes to the log.
+    + Charts with sky notes are shown but can't be selected yet.
+
 #### Charts
 
 + Defined chart format v1.

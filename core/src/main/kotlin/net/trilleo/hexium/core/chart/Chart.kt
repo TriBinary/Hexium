@@ -37,7 +37,11 @@ data class DifficultyChart(
 	val bpm: List<BpmChange>,
 	val meter: List<MeterChange>,
 	val notes: List<Note>,
-)
+) {
+	/** True if every note is on the ground track: no sky taps, slides or flicks. */
+	val isGroundOnly: Boolean
+		get() = notes.all { it is Note.Tap || it is Note.Hold }
+}
 
 data class BpmChange(val t: Beat, val bpm: Double)
 

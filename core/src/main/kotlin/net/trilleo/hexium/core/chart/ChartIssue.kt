@@ -49,6 +49,8 @@ enum class IssueCode {
 	UNLISTED_DIFFICULTY_FILE,
 	DUPLICATE_DIFFICULTY_FILE,
 	PACKAGE_TOO_LARGE,
+	MISSING_META_FILE,
+	MISSING_AUDIO_FILE,
 }
 
 /** A problem in a chart file. [path] points at it, for example `notes[3].lane`, or `$` for the whole file. */

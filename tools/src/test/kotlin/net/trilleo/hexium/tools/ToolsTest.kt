@@ -118,12 +118,22 @@ class ToolsTest {
 	fun lintChecksAFolderWithMetaAsAPackage() {
 		write("meta.json", goodMeta)
 		write("basic.json", goodChart)
+		write("audio.ogg", "")
 		assertEquals(0, run("lint", dir.path).first)
 
 		write("meta.json", goodMeta.replace(""""BASIC"""", """"BASIC", "EXPERT""""))
 		val (code, output) = run("lint", dir.path)
 		assertEquals(1, code)
 		assertTrue("expert.json" in output, output)
+	}
+
+	@Test
+	fun lintReportsAFolderWithoutAudio() {
+		write("meta.json", goodMeta)
+		write("basic.json", goodChart)
+		val (code, output) = run("lint", dir.path)
+		assertEquals(1, code)
+		assertTrue("audio.ogg" in output, output)
 	}
 
 	@Test

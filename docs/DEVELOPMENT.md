@@ -20,6 +20,7 @@ The Gradle wrapper downloads the right Gradle version, and Loom downloads Minecr
 | `tools/` | Command-line tools: chart lint, replay re-judge, replay dump. |
 | `docs/` | Design, specs and developer docs (upper-case file names). |
 | `docs/examples/` | Hand-written example charts in the writer's layout, used as test fixtures. |
+| `mod/src/client/resources/hexium_packs/test-pattern/` | The chart pack bundled in the mod: a click track, `basic.json` (an exact copy of the example chart) and a 3-minute `advanced.json` for drift tests. |
 | `CHANGELOG.md` | Player-facing change log, see [RELEASING.md](RELEASING.md). |
 
 ## Commands
@@ -29,11 +30,17 @@ The Gradle wrapper downloads the right Gradle version, and Loom downloads Minecr
 | `./gradlew build` | Builds every module and runs all tests |
 | `./gradlew :mod:runClient` | Starts Minecraft with Hexium in a dev environment |
 | `./gradlew :core:test` | Runs only the judge and chart tests (fast) |
-| `./gradlew :tools:run --args="lint docs/examples"` | Lints chart files or folders. A folder with a `meta.json` is also checked as a package |
+| `./gradlew :tools:run --args="lint docs/examples"` | Lints chart files or folders. A folder with a `meta.json` is also checked as a package, including that it has its `audio.ogg` |
 | `./gradlew :tools:run --args="rejudge docs/examples/basic.json play.hexreplay"` | Runs a replay through the judge and prints the result |
 | `./gradlew :tools:run --args="dump play.hexreplay"` | Prints a replay as text |
 | `./gradlew :core:test --rerun -Dhexium.updateGolden=true` | Regenerates the golden replays, after a deliberate change to the judge |
 | `./gradlew :server:run` | Runs the server locally (from Milestone 7) |
+
+The test pack's `audio.ogg` is a 185-second click track at 120 BPM with an accent on every fourth beat, so beats land exactly on the chart's grid. It was made with:
+
+```bash
+ffmpeg -f lavfi -i "aevalsrc='sin(2*PI*if(eq(mod(floor(t*2),4),0),1760,880)*t)*exp(-60*mod(t,0.5))':s=44100:d=185" -ac 2 -c:a vorbis -strict -2 audio.ogg
+```
 
 The built mod is `mod/build/libs/hexium-<version>.jar`. The version comes only from `mod_version` in `gradle.properties`.
 
