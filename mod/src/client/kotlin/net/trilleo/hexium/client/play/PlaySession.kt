@@ -9,6 +9,8 @@ import net.trilleo.hexium.Hexium
 import net.trilleo.hexium.client.audio.SongStream
 import net.trilleo.hexium.client.chart.ChartPack
 import net.trilleo.hexium.client.clock.AudioClock
+import net.trilleo.hexium.client.debug.DebugOverlay
+import net.trilleo.hexium.client.debug.InputDelay
 import net.trilleo.hexium.client.input.LaneInput
 import net.trilleo.hexium.client.screen.ResultsScreen
 import net.trilleo.hexium.core.chart.ChartFolder
@@ -23,6 +25,7 @@ import net.trilleo.hexium.core.judge.JudgeChart
 import net.trilleo.hexium.core.replay.PlayInput
 import net.trilleo.hexium.core.replay.Replay
 import net.trilleo.hexium.core.replay.ReplayRecorder
+import org.lwjgl.sdl.SDLTimer
 import org.slf4j.LoggerFactory
 
 /**
@@ -41,6 +44,8 @@ class PlaySession private constructor(
 
 	val judgeChart: JudgeChart = JudgeChart.compile(chart)
 	val clock = AudioClock(stream)
+	val inputDelay = InputDelay()
+	val debugOverlay = DebugOverlay(clock, stream, inputDelay)
 	val judgementOffsetMs = PlaySettings.judgementOffsetMs.toDouble()
 	val recorder = ReplayRecorder(judgeChart, Replay.hashOf(chartFile), judgementOffsetMs, expectedEvents())
 	val track = GroundTrack(chart)
@@ -133,6 +138,8 @@ class PlaySession private constructor(
 	private fun drainInput() {
 		while (LaneInput.hasEvent) {
 			input.lane(LaneInput.lane, LaneInput.down, clock.songTimeAt(LaneInput.timeNs))
+			// Only what reached the judge, so a key changed during a pause isn't counted.
+			if (input.isOpen) inputDelay.record(SDLTimer.SDL_GetTicksNS() - LaneInput.timeNs)
 			LaneInput.next()
 		}
 	}
@@ -143,6 +150,7 @@ class PlaySession private constructor(
 		clock.pause()
 		state = State.FINISHED
 		LOGGER.info("Finished with score {}, max combo {}, lamp {}", judge.score, judge.maxCombo, judge.clearLamp)
+		LOGGER.info("Final drift {} ms, max {} ms, resyncs {}, underruns {}", clock.clock.driftMs, clock.clock.maxDriftMs, clock.clock.resyncCount, stream.underruns)
 		// A cut-short replay would re-judge to a different result.
 		if (!recorder.isFull) savedReplay = ReplayFolder.save(pack.meta?.id ?: UNKNOWN_CHART, chart.difficulty, recorder.toReplay())
 		minecraft.gui.setScreen(ResultsScreen(this))

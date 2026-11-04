@@ -36,6 +36,7 @@
 + Added a results screen with your score, clear lamp, judgement counts and best combo.
 + Added Retry, on the results and pause screens, which starts the chart again without reloading the stage.
 + Finished plays now save a replay in `.minecraft/hexium/replays`.
++ F6 during a play shows timing numbers: clock drift, frame time, how long key presses waited to reach the judge, and your offsets.
 + Added calibration, from the Calibrate button in Hexium's menu.
     + Tap to clicks with your eyes closed, then to moving notes with no sound, and it suggests a judgement offset and a visual offset that you can adjust before saving.
 + Your note speed and offsets are now remembered, in `.minecraft/hexium/settings.json`.

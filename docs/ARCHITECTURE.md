@@ -50,7 +50,7 @@ Hexium is client-only (`"environment": "client"` in `fabric.mod.json`), so nearl
 ## Input timing
 
 - Minecraft 26.3 uses SDL3, not GLFW. Read lane keys in `SDLEventHandler` (`LaneInput`), since it hands keys on to the keyboard handler later in the frame. Keys are physical positions, so the left hand sits the same on any layout. Each SDL event carries a `timestamp` from SDL's tick counter (`SDL_GetTicksNS`), the same clock the song clock runs on, so convert that to song time with the clock's mapping.
-- Events are polled once per frame, so without a real timestamp from the OS the error is at most one frame. The debug overlay measures this. Tell players to run uncapped or at 240+ FPS during play (about 4 ms of error). Keep rendering fast so this holds.
+- Events are polled once per frame, so without a real timestamp from the OS the error is at most one frame. The debug overlay's `key stamp age` shows whether stamps are real: at a low frame rate they should spread from 0 up to a frame. Tell players to run uncapped or at 240+ FPS during play (about 4 ms of error). Keep rendering fast so this holds.
 - Every frame, record an aim sample (song time, yaw, pitch → crosshair point on the screen plane). Slides and flicks are judged from these samples. Flicks test the line between two samples, so fast swipes at low FPS still register.
 - Events go into a fixed ring that the play loop (`PlaySession`) drains at the start of every frame, before anything reads the time. A play has a 3-second lead-in with the clock running before the music, and stays open 2 seconds after the last note.
 - Until sky notes exist, the aim sample is a fixed mid-screen point, on the same code path.
@@ -69,7 +69,7 @@ Hexium is client-only (`"environment": "client"` in `fabric.mod.json`), so nearl
 - Notes are plain coloured cuboids until Milestone 5 brings block models (note block styles per type). Hold bodies are stretched quads, slide paths will be ribbons, and the screen will be a translucent pane with a frame.
 - Note speed and visual offset A live in `PlaySettings`, changed from the pause screen, and A also by calibration. They reach only `TrackRenderer`, so the judge and replays never see them. Offset B is read when a play starts and goes in its replay.
 - Hit effects are client-only particles and a short sound, with a hit-sound volume setting.
-- Performance budget: 240 FPS with 300 notes on screen on a mid-range GPU. Add a debug overlay showing clock drift, frame time and input-to-judgement delay from Milestone 2.
+- Performance budget: 240 FPS with 300 notes on screen on a mid-range GPU. F6 during a play shows a debug overlay with the song position, clock drift, frame time, the offsets, and input-to-judgement delay as `key stamp age`: how old a key's SDL timestamp is when the judge gets it (minimum, average, maximum). Judged times come from the stamp, so this doesn't shift them, and it can't see the keyboard's own delay. It rebuilds its text every quarter second. It stays on across plays until the game closes, and F3+F6 still reaches vanilla.
 
 ## Local data
 

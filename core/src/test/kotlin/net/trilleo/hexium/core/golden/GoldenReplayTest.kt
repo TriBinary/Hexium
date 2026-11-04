@@ -1,13 +1,19 @@
 package net.trilleo.hexium.core.golden
 
 import java.io.File
+import java.nio.file.Files
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import net.trilleo.hexium.core.chart.ChartParser
 import net.trilleo.hexium.core.judge.ClearLamp
 import net.trilleo.hexium.core.judge.Judge
+import net.trilleo.hexium.core.judge.JudgeChart
 import net.trilleo.hexium.core.judge.Judgement
+import net.trilleo.hexium.core.replay.Replay
 import net.trilleo.hexium.core.replay.ReplayFile
 import net.trilleo.hexium.core.replay.ReplayJudge
 
@@ -75,6 +81,7 @@ class GoldenReplayTest {
 	)
 
 	private val folder = File("src/test/resources/golden")
+	private val recordedFolder = File(folder, "recorded")
 
 	init {
 		if (System.getProperty("hexium.updateGolden") == "true") regenerate()
@@ -118,6 +125,74 @@ class GoldenReplayTest {
 		}
 	}
 
+	/*
+	 * Real plays, recorded in the game, keeping the names they were saved under. Nobody can work out a person's
+	 * results by hand, so these lock in what the judge gave: they catch a change, and regenerating, which only
+	 * rewrites their `.expected` files, is the deliberate way to accept one. The inputs of a real play stay worth
+	 * having under a newer judge, so unlike a real re-judge this ignores the judge version. It can't ignore the
+	 * chart: after editing a chart, delete its recordings and record new ones.
+	 */
+	private fun recordedPlays(from: File): List<File> =
+		from.listFiles { file -> file.name.endsWith(".hexreplay") }.orEmpty().sortedBy { it.name }
+
+	private fun recordedChartFile(play: File): ByteArray {
+		val match = assertNotNull(RECORDED_NAME.matchEntire(play.name), "${play.name} isn't named as the game saves replays")
+		val (pack, difficulty) = match.destructured
+		assertEquals(BUNDLED_PACK, pack, "${play.name} isn't of a pack the tests can read")
+		return File("../mod/src/client/resources/hexium_packs/$BUNDLED_PACK/$difficulty.json").readBytes()
+	}
+
+	private fun rejudgeRecorded(play: File): Judge {
+		val read = ReplayFile.read(play.readBytes())
+		assertNull(read.error, play.name)
+		val replay = assertNotNull(read.replay)
+		val chartFile = recordedChartFile(play)
+		assertContentEquals(Replay.hashOf(chartFile), replay.chartHash, "${play.name} was played on a different version of its chart")
+		val chart = assertNotNull(ChartParser.parseDifficulty(String(chartFile, Charsets.UTF_8)).value)
+		return ReplayJudge.play(JudgeChart.compile(chart), replay)
+	}
+
+	private fun expectedOf(play: File) = File(play.parentFile, "${play.name.removeSuffix(".hexreplay")}.expected")
+
+	private fun assertRecordedPlaysMatch(from: File) {
+		for (play in recordedPlays(from)) assertEquals(expectedOf(play).readText(), log(rejudgeRecorded(play)), play.name)
+	}
+
+	private fun writeRecordedExpected(from: File) {
+		for (play in recordedPlays(from)) expectedOf(play).writeText(log(rejudgeRecorded(play)))
+	}
+
+	@Test
+	fun recordedPlaysKeepTheirResults() {
+		assertRecordedPlaysMatch(recordedFolder)
+	}
+
+	/** Checks the path above with a stored replay of the same chart, until and beyond there being real ones. */
+	@Test
+	fun aRecordedPlayIsReadAndLockedIn() {
+		val temp = Files.createTempDirectory("hexium-recorded").toFile()
+		try {
+			val play = File(temp, "test-pattern-basic-20261104-160608-2.hexreplay")
+			File(folder, "late_basic.hexreplay").copyTo(play)
+			writeRecordedExpected(temp)
+			assertEquals(File(folder, "late_basic.expected").readText(), expectedOf(play).readText())
+			assertRecordedPlaysMatch(temp)
+		} finally {
+			temp.deleteRecursively()
+		}
+	}
+
+	@Test
+	fun aRecordedPlayMustBeNamedAsTheGameSavesIt() {
+		assertFailsWith<AssertionError> { recordedChartFile(File("my-replay.hexreplay")) }
+		assertFailsWith<AssertionError> { recordedChartFile(File("other-pack-basic-20261104-160608.hexreplay")) }
+	}
+
+	private companion object {
+		const val BUNDLED_PACK = "test-pattern"
+		val RECORDED_NAME = Regex("""(.+)-([a-z]+)-\d{8}-\d{6}(?:-\d+)?\.hexreplay""")
+	}
+
 	private fun regenerate() {
 		folder.mkdirs()
 		for (golden in goldens) {
@@ -125,5 +200,6 @@ class GoldenReplayTest {
 			File(folder, "${golden.name}.hexreplay").writeBytes(ReplayFile.write(recorder.toReplay()))
 			File(folder, "${golden.name}.expected").writeText(log(recorder.judge))
 		}
+		writeRecordedExpected(recordedFolder)
 	}
 }

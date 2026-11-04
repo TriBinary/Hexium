@@ -14,6 +14,7 @@ import net.minecraft.world.Difficulty
 import net.minecraft.world.level.GameType
 import net.minecraft.world.level.gamerules.GameRules
 import net.trilleo.hexium.client.input.LaneInput
+import net.trilleo.hexium.client.play.PlayHud
 import net.trilleo.hexium.client.play.PlaySettings
 import net.trilleo.hexium.client.play.TrackRenderer
 import net.trilleo.hexium.client.play.PlaySession
@@ -346,6 +347,10 @@ class HexiumClientGameTest : FabricClientGameTest {
 		val play = HexiumSession.play()!!
 		context.waitFor({ play.clock.songTimeMs >= HOLD_ON_THE_WAY_MS }, SONG_TICKS)
 		context.takeScreenshot("improved_transparency")
+		context.runOnClient<RuntimeException> { PlayHud.debugShown = true }
+		context.waitTicks(DEBUG_REFRESH_TICKS)
+		context.takeScreenshot("debug_overlay")
+		context.runOnClient<RuntimeException> { PlayHud.debugShown = false }
 		context.runOnClient<RuntimeException> { it.pauseGame(false) }
 		context.waitForScreen(StageMenuScreen::class.java)
 		context.clickScreenButton("hexium.stage.leave")
@@ -473,6 +478,7 @@ class HexiumClientGameTest : FabricClientGameTest {
 		const val PAUSE_AT_MS = 3250.0
 
 		const val COUNTDOWN_TICKS = 100
+		const val DEBUG_REFRESH_TICKS = 10
 		const val QUIET_VOLUME = 0.01
 		const val TAPS_FOR_A_STEP = 18
 		const val CLICK_BEAT_MS = 500.0

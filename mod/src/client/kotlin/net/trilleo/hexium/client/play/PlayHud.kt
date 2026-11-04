@@ -118,9 +118,19 @@ object PlayHud {
 		readyText = Prepared(font, Component.translatable("hexium.play.ready"))
 	}
 
+	/** Whether the timing numbers are showing. F6 during a play. */
+	var debugShown = false
+
 	private fun draw(graphics: GuiGraphicsExtractor, play: PlaySession) {
 		// The results screen says all of this.
 		if (play.state == PlaySession.State.FINISHED) return
+		val overlay = play.debugOverlay
+		if (debugShown) {
+			overlay.update()
+			overlay.draw(graphics, Minecraft.getInstance().font, MARGIN, MARGIN)
+		} else {
+			overlay.stop()
+		}
 		val font = Minecraft.getInstance().font
 		if (session !== play) {
 			session = play

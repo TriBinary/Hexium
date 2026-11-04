@@ -1,5 +1,7 @@
 package net.trilleo.hexium.client.input
 
+import net.minecraft.client.Minecraft
+import net.trilleo.hexium.client.play.PlayHud
 import net.trilleo.hexium.client.session.HexiumSession
 import org.lwjgl.sdl.SDLScancode
 import org.lwjgl.sdl.SDL_KeyboardEvent
@@ -51,11 +53,17 @@ object LaneInput {
 	/** True while the calibration screen is reading taps, with no play going on. */
 	var capturing = false
 
-	/** Returns true if the event was a lane key meant for the game, so vanilla shouldn't see it. */
+	/** Returns true if the event was meant for the game, a lane key or F6 for the timing numbers, so vanilla shouldn't see it. */
 	@JvmStatic
 	fun onKeyEvent(event: Long): Boolean {
 		if (!capturing && HexiumSession.play()?.acceptingInput != true) return false
-		val lane = laneOf(SDL_KeyboardEvent.nscancode(event))
+		val scancode = SDL_KeyboardEvent.nscancode(event)
+		// F3+F6 is vanilla's debug options screen.
+		if (scancode == SDLScancode.SDL_SCANCODE_F6 && !capturing && !Minecraft.getInstance().options.keyDebugModifier.isDown) {
+			if (SDL_KeyboardEvent.ndown(event) && !SDL_KeyboardEvent.nrepeat(event)) PlayHud.debugShown = !PlayHud.debugShown
+			return true
+		}
+		val lane = laneOf(scancode)
 		if (lane < 0) return false
 		// Taken while a screen is open too, since the pause rule needs to know which keys are down on resuming.
 		if (!SDL_KeyboardEvent.nrepeat(event)) push(lane, SDL_KeyboardEvent.ndown(event), SDL_KeyboardEvent.ntimestamp(event))
