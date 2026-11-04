@@ -36,7 +36,7 @@
 + Added a results screen with your score, clear lamp, judgement counts and best combo.
 + Added Retry, on the results and pause screens, which starts the chart again without reloading the stage.
 + Finished plays now save a replay in `.minecraft/hexium/replays`.
-+ F6 during a play shows timing numbers: clock drift, frame time, how long key presses waited to reach the judge, and your offsets.
++ F6 during a play shows timing numbers: clock drift, frame time, how long key presses waited to reach the judge, how many arrived too late to keep their own time, and your offsets.
 + Added calibration, from the Calibrate button in Hexium's menu.
     + Tap to clicks with your eyes closed, then to moving notes with no sound, and it suggests a judgement offset and a visual offset that you can adjust before saving.
 + Your note speed and offsets are now remembered, in `.minecraft/hexium/settings.json`.
@@ -70,6 +70,11 @@
 + Fixed charts with a huge hold being able to run out of memory when their ticks are built.
 + Fixed charts with notes too far away to have a time passing validation.
 + Fixed difficulty files named for another difficulty passing the linter.
+
+#### Gameplay
+
++ Fixed most key presses being timed by the frame that noticed them instead of when they happened.
+    + Misses and hold ticks now show up to 50 ms later, while hits show as fast as before.
 
 #### Sky Notes
 

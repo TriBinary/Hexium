@@ -138,6 +138,7 @@ class PlaySession private constructor(
 	private fun drainInput() {
 		while (LaneInput.hasEvent) {
 			input.lane(LaneInput.lane, LaneInput.down, clock.songTimeAt(LaneInput.timeNs))
+			inputDelay.lateKeys = input.lateKeyCount
 			// Only what reached the judge, so a key changed during a pause isn't counted.
 			if (input.isOpen) inputDelay.record(SDLTimer.SDL_GetTicksNS() - LaneInput.timeNs)
 			LaneInput.next()
@@ -145,12 +146,12 @@ class PlaySession private constructor(
 	}
 
 	private fun finish(minecraft: Minecraft) {
-		recorder.finish()
+		input.finish()
 		readResults()
 		clock.pause()
 		state = State.FINISHED
 		LOGGER.info("Finished with score {}, max combo {}, lamp {}", judge.score, judge.maxCombo, judge.clearLamp)
-		LOGGER.info("Final drift {} ms, max {} ms, resyncs {}, underruns {}", clock.clock.driftMs, clock.clock.maxDriftMs, clock.clock.resyncCount, stream.underruns)
+		LOGGER.info("Final drift {} ms, max {} ms, resyncs {}, underruns {}, late keys {}", clock.clock.driftMs, clock.clock.maxDriftMs, clock.clock.resyncCount, stream.underruns, input.lateKeyCount)
 		// A cut-short replay would re-judge to a different result.
 		if (!recorder.isFull) savedReplay = ReplayFolder.save(pack.meta?.id ?: UNKNOWN_CHART, chart.difficulty, recorder.toReplay())
 		minecraft.gui.setScreen(ResultsScreen(this))

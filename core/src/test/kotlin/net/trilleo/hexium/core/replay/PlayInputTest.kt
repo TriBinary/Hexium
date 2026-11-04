@@ -1,5 +1,6 @@
 package net.trilleo.hexium.core.replay
 
+import java.lang.management.ManagementFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -10,6 +11,7 @@ import net.trilleo.hexium.core.chart.Difficulty
 import net.trilleo.hexium.core.chart.DifficultyChart
 import net.trilleo.hexium.core.chart.MeterChange
 import net.trilleo.hexium.core.chart.Note
+import net.trilleo.hexium.core.judge.Judge
 import net.trilleo.hexium.core.judge.JudgeChart
 import net.trilleo.hexium.core.judge.Judgement
 
@@ -51,8 +53,10 @@ class PlayInputTest {
 	@Test
 	fun aFrameSendsAnAimSampleAndMovesTheJudgeOn() {
 		input.frame(20000.0, 0.5f, 0.5f)
-		assertEquals(1, recorder.toReplay().eventCount)
 		assertEquals(Judgement.MISS, recorder.judge.judgement(0))
+		assertEquals(0, recorder.toReplay().eventCount)
+		input.frame(20000.0 + PlayInput.HOLD_BACK_MS, 0.5f, 0.5f)
+		assertEquals(1, recorder.toReplay().eventCount)
 	}
 
 	@Test
@@ -85,6 +89,7 @@ class PlayInputTest {
 		assertEquals(0, recorder.toReplay().eventCount)
 		input.frame(5000.0, 0.5f, 0.5f)
 		assertTrue(input.isOpen)
+		input.frame(5000.0 + PlayInput.HOLD_BACK_MS, 0.5f, 0.5f)
 		assertEquals(1, recorder.toReplay().eventCount)
 	}
 
@@ -171,15 +176,17 @@ class PlayInputTest {
 
 	/** A re-judge always runs to the end of the chart, so the live play must have too. */
 	private fun assertReJudgesTheSame() {
-		recorder.finish()
-		val judge = recorder.judge
-		val again = ReplayJudge.play(chart, ReplayFile.read(ReplayFile.write(recorder.toReplay())).replay!!)
-		assertEquals(judge.score, again.score)
-		assertEquals(judge.maxCombo, again.maxCombo)
-		assertEquals(judge.judgedCount, again.judgedCount)
-		for (i in 0 until judge.judgedCount) {
-			assertEquals(judge.judgement(i), again.judgement(i))
-			assertEquals(judge.judgedDeltaMs(i), again.judgedDeltaMs(i))
+		input.finish()
+		assertSameResults(recorder.judge, ReplayJudge.play(chart, ReplayFile.read(ReplayFile.write(recorder.toReplay())).replay!!))
+	}
+
+	private fun assertSameResults(expected: Judge, actual: Judge) {
+		assertEquals(expected.score, actual.score)
+		assertEquals(expected.maxCombo, actual.maxCombo)
+		assertEquals(expected.judgedCount, actual.judgedCount)
+		for (i in 0 until expected.judgedCount) {
+			assertEquals(expected.judgement(i), actual.judgement(i))
+			assertEquals(expected.judgedDeltaMs(i), actual.judgedDeltaMs(i))
 		}
 	}
 
@@ -192,11 +199,21 @@ class PlayInputTest {
 	}
 
 	@Test
-	fun anEventJustBeforeThePausePointAfterReopeningCountsAsThePoint() {
+	fun anEventPastThePausePointKeepsItsTimeEvenIfAFrameHasPassedIt() {
 		pauseAndComeBack(5000.0)
 		input.frame(5010.0, 0.5f, 0.5f)
 		input.lane(2, true, 5005.0)
-		assertEquals(listOf("LANE_DOWN 2 at 5010.0"), laneEvents())
+		assertEquals(listOf("LANE_DOWN 2 at 5005.0"), laneEvents())
+		assertEquals(0, input.lateKeyCount)
+	}
+
+	@Test
+	fun aStampFromBeforeThePausePointCountsAsThePoint() {
+		pauseAndComeBack(5000.0)
+		input.frame(5010.0, 0.5f, 0.5f)
+		input.lane(2, true, 4990.0)
+		assertEquals(listOf("LANE_DOWN 2 at 5000.0"), laneEvents())
+		assertEquals(1, input.lateKeyCount)
 	}
 
 	@Test
@@ -237,5 +254,223 @@ class PlayInputTest {
 		assertEquals(listOf("LANE_DOWN 1 at 10000.0", "LANE_UP 1 at 10300.0"), laneEvents())
 		assertTrue(recorder.judge.count(Judgement.MISS) > 0)
 		assertReJudgesTheSame()
+	}
+
+	private fun allEventTimes(): List<Double> {
+		val replay = recorder.toReplay()
+		return (0 until replay.eventCount).map { replay.timeMs(it) }
+	}
+
+	@Test
+	fun aKeyOlderThanTheLastFrameKeepsItsOwnTime() {
+		input.frame(10000.0, 0.5f, 0.5f)
+		input.frame(10006.0, 0.5f, 0.5f)
+		input.lane(0, true, 10003.0)
+		assertEquals(listOf("LANE_DOWN 0 at 10003.0"), laneEvents())
+		assertEquals(3.0, recorder.judge.judgedDeltaMs(0))
+		assertEquals(0, input.lateKeyCount)
+	}
+
+	@Test
+	fun aKeyIsJudgedStraightAwayEvenThoughSamplesAreHeldBack() {
+		input.frame(10000.0, 0.5f, 0.5f)
+		input.lane(0, true, 10000.0)
+		assertEquals(Judgement.JUSTICE_CRITICAL, recorder.judge.judgement(0))
+	}
+
+	@Test
+	fun aKeyLandsAmongTheAimSamplesInTimeOrder() {
+		input.frame(1000.0, 0.5f, 0.5f)
+		input.frame(1006.0, 0.5f, 0.5f)
+		input.frame(1012.0, 0.5f, 0.5f)
+		input.lane(3, true, 1009.0)
+		input.finish()
+		assertEquals(listOf(1000.0, 1006.0, 1009.0, 1012.0), allEventTimes())
+		assertEquals(listOf("LANE_DOWN 3 at 1009.0"), laneEvents())
+	}
+
+	@Test
+	fun aKeyArrivingLateNearTheEndOfItsWindowIsNotMissed() {
+		input.frame(10120.0, 0.5f, 0.5f)
+		input.lane(0, true, 10080.0)
+		assertEquals(Judgement.ATTACK, recorder.judge.judgement(0))
+		assertEquals(80.0, recorder.judge.judgedDeltaMs(0))
+	}
+
+	@Test
+	fun aKeyExactlyAtTheHoldBackKeepsItsTime() {
+		input.frame(10100.0, 0.5f, 0.5f)
+		input.lane(0, true, 10100.0 - PlayInput.HOLD_BACK_MS)
+		assertEquals(listOf("LANE_DOWN 0 at 10050.0"), laneEvents())
+		assertEquals(0, input.lateKeyCount)
+	}
+
+	@Test
+	fun aKeyOlderThanTheHoldBackIsMovedUpAndCounted() {
+		input.frame(10100.0, 0.5f, 0.5f)
+		input.lane(0, true, 10040.0)
+		assertEquals(listOf("LANE_DOWN 0 at 10050.0"), laneEvents())
+		assertEquals(1, input.lateKeyCount)
+	}
+
+	@Test
+	fun keysSyncedAfterAPauseAreNotCountedAsLate() {
+		input.lane(0, true, 1000.0)
+		pauseAndComeBack(5000.0)
+		input.lane(0, false, 3000.0)
+		input.frame(5001.0, 0.5f, 0.5f)
+		assertEquals(0, input.lateKeyCount)
+	}
+
+	@Test
+	fun pausingSendsEverySampleStillWaiting() {
+		input.frame(1000.0, 0.5f, 0.5f)
+		input.frame(1010.0, 0.5f, 0.5f)
+		assertEquals(0, recorder.toReplay().eventCount)
+		input.pause(1012.0)
+		assertEquals(listOf(1000.0, 1010.0), allEventTimes())
+	}
+
+	@Test
+	fun pausingJudgesEverythingDueBeforeThePausePoint() {
+		input.frame(10080.0, 0.5f, 0.5f)
+		assertEquals(0, recorder.judge.judgedCount)
+		input.pause(10100.0)
+		assertEquals(2, recorder.judge.count(Judgement.MISS))
+	}
+
+	@Test
+	fun finishingSendsEverySampleStillWaiting() {
+		input.frame(1000.0, 0.5f, 0.5f)
+		input.finish()
+		assertEquals(listOf(1000.0), allEventTimes())
+	}
+
+	@Test
+	fun moreSamplesThanTheHoldBackHasRoomForAreAllKeptInOrder() {
+		val frames = 1000
+		for (i in 0 until frames) input.frame(1000.0 + i * 0.01, 0.5f, 0.5f)
+		input.finish()
+		assertEquals(List(frames) { 1000.0 + it * 0.01 }, allEventTimes())
+	}
+
+	@Test
+	fun aTimeThatIsNotFiniteIsIgnoredAndBlocksNothing() {
+		input.frame(Double.NaN, 0.5f, 0.5f)
+		input.frame(1000.0, 0.5f, 0.5f)
+		input.finish()
+		assertEquals(listOf(1000.0), allEventTimes())
+	}
+
+	/** Keys reach the frame after they happened, as on a real machine, and still give what perfect delivery would. */
+	@Test
+	fun keysArrivingAFrameLateGiveTheSameResultAsInputInTimeOrder() {
+		// The release lands just before a hold tick at 11875, where a moved time would change that tick's result.
+		val keys = listOf(Triple(0, true, 10003.0), Triple(1, true, 10011.0), Triple(0, false, 10049.0), Triple(1, false, 11874.0), Triple(2, true, 14995.0))
+		for (frameLength in doubleArrayOf(6.0, 16.7, 33.3)) {
+			val inOrder = ReplayRecorder(chart, ByteArray(32), 0.0, 100)
+			var next = 0
+			var frameMs = 9900.0
+			while (frameMs < 15500.0) {
+				while (next < keys.size && keys[next].third <= frameMs) {
+					val (lane, down, time) = keys[next++]
+					if (down) inOrder.pressLane(lane, time) else inOrder.releaseLane(lane, time)
+				}
+				inOrder.aimSample(frameMs, 0.5f, 0.5f)
+				frameMs += frameLength
+			}
+			inOrder.finish()
+
+			val liveRecorder = ReplayRecorder(chart, ByteArray(32), 0.0, 100)
+			val live = PlayInput(liveRecorder, 4)
+			next = 0
+			frameMs = 9900.0
+			while (frameMs < 15500.0) {
+				// A key stamped in the frame before this one is only seen now, after that frame's sample.
+				while (next < keys.size && keys[next].third <= frameMs - frameLength) {
+					val (lane, down, time) = keys[next++]
+					live.lane(lane, down, time)
+				}
+				live.frame(frameMs, 0.5f, 0.5f)
+				frameMs += frameLength
+			}
+			live.finish()
+
+			assertEquals(0, live.lateKeyCount)
+			assertSameResults(inOrder.judge, liveRecorder.judge)
+			assertSameResults(liveRecorder.judge, ReplayJudge.play(chart, ReplayFile.read(ReplayFile.write(liveRecorder.toReplay())).replay!!))
+		}
+	}
+
+	@Test
+	fun samplesKeepTheirOwnTimesAndPositions() {
+		input.frame(1000.0, 0.1f, 0.2f)
+		input.frame(1006.0, 0.3f, 0.4f)
+		input.frame(1060.0, 0.5f, 0.6f)
+		val replay = recorder.toReplay()
+		assertEquals(2, replay.eventCount)
+		assertEquals(listOf(1000.0, 1006.0), allEventTimes())
+		assertEquals(listOf(0.1f, 0.3f), listOf(replay.x(0), replay.x(1)))
+		assertEquals(listOf(0.2f, 0.4f), listOf(replay.y(0), replay.y(1)))
+	}
+
+	@Test
+	fun aMovedUpKeyReJudgesTheSame() {
+		input.frame(10100.0, 0.5f, 0.5f)
+		input.lane(0, true, 10040.0)
+		assertEquals(1, input.lateKeyCount)
+		assertReJudgesTheSame()
+	}
+
+	/** A swipe across a flick, with a key arriving late, must re-judge exactly and hit the flick at its crossing. */
+	@Test
+	fun aMovingAimAndALateKeyReJudgeTheSame() {
+		val skyChart = JudgeChart.compile(
+			DifficultyChart(
+				1, Difficulty.EXPERT, 1, 4, 0.0,
+				listOf(BpmChange(beat(0), 120.0)),
+				listOf(MeterChange(beat(0), 4, 4)),
+				listOf(Note.Tap(beat(20), 0), Note.Flick(beat(20), 0.5, 0.5, null, 1.0)),
+			),
+		)
+		val liveRecorder = ReplayRecorder(skyChart, ByteArray(32), 0.0, 100)
+		val live = PlayInput(liveRecorder, 4)
+		var frameMs = 9700.0
+		var pressed = false
+		while (frameMs < 10500.0) {
+			if (!pressed && frameMs >= 10010.0) {
+				live.lane(0, true, frameMs - 8.0)
+				pressed = true
+			}
+			live.frame(frameMs, (0.1 + (frameMs - 9700.0) / 750.0).toFloat(), 0.5f)
+			frameMs += 6.0
+		}
+		live.finish()
+		assertEquals(0, liveRecorder.judge.count(Judgement.MISS))
+		assertSameResults(liveRecorder.judge, ReplayJudge.play(skyChart, ReplayFile.read(ReplayFile.write(liveRecorder.toReplay())).replay!!))
+	}
+
+	@Test
+	fun playingDoesNotAllocate() {
+		val threads = ManagementFactory.getThreadMXBean() as com.sun.management.ThreadMXBean
+		val bigRecorder = ReplayRecorder(chart, ByteArray(32), 0.0, 500_000)
+		val play = PlayInput(bigRecorder, 4)
+		val thread = Thread.currentThread().threadId()
+		val before = threads.getThreadAllocatedBytes(thread)
+		var i = 0
+		while (i < 200_000) {
+			val time = i * 2.0
+			if (i % 50 == 0) play.lane(i % 4, i % 100 == 0, time - 3.0)
+			play.frame(time, 0.5f, 0.5f)
+			if (i % 10_000 == 9_999) {
+				play.pause(time)
+				play.resume()
+				play.frame(time, 0.5f, 0.5f)
+			}
+			i++
+		}
+		play.finish()
+		val allocated = threads.getThreadAllocatedBytes(thread) - before
+		assertTrue(allocated < 64 * 1024, "allocated $allocated bytes")
 	}
 }

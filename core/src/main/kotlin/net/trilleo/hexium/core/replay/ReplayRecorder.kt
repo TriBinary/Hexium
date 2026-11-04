@@ -28,7 +28,10 @@ class ReplayRecorder(
 	private var xs = FloatArray(capacity)
 	private var ys = FloatArray(capacity)
 	private var count = 0
-	private var latestMs = Double.NEGATIVE_INFINITY
+
+	/** The time everything now counts from: an event older than this is recorded as happening at it. */
+	var latestMs = Double.NEGATIVE_INFINITY
+		private set
 
 	/** True if events have been lost to the limit. */
 	var isFull = false

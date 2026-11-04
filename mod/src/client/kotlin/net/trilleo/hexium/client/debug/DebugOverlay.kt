@@ -62,7 +62,7 @@ class DebugOverlay(
 			if (stream.usesLatency) "known" else "unknown",
 		)
 		if (inputDelay != null) {
-			lines[4] = String.format(Locale.ROOT, "key stamp age %.1f / %.1f / %.1f ms", inputDelay.minMs, inputDelay.averageMs, inputDelay.maxMs)
+			lines[4] = String.format(Locale.ROOT, "key stamp age %.1f / %.1f / %.1f ms, late keys %d", inputDelay.minMs, inputDelay.averageMs, inputDelay.maxMs, inputDelay.lateKeys)
 			lines[5] = String.format(
 				Locale.ROOT,
 				"offsets A %d ms, B %d ms, speed %d",

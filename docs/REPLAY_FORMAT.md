@@ -41,4 +41,4 @@ The judge version is `JudgementConfig.JUDGE_VERSION`. Raise it whenever a change
 
 ## Recording
 
-The mod sends input through `PlayInput`, which holds the pause rule above, and on to `ReplayRecorder`, which records each event and passes it to the judge, so a replay holds exactly what the judge saw. An event older than the current time is recorded as happening now, which is also how the judge treats it.
+The mod sends input through `PlayInput`, which holds the pause rule above, and on to `ReplayRecorder`, which records each event and passes it to the judge, so a replay holds exactly what the judge saw. Keys reach the game after they happened, so `PlayInput` holds aim samples and the judge's clock 50 ms behind the song, and a key goes in at its own time among the samples around it. An event older than the judge's current time is recorded as happening at that time, which is also how the judge treats it.

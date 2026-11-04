@@ -9,7 +9,8 @@ import net.trilleo.hexium.core.chart.SkyButton
  *
  * Results don't depend on how often [advanceTo] is called, only on the input. Time can't go
  * backwards: an input older than the current time counts as happening now. Live play goes
- * through [net.trilleo.hexium.core.replay.ReplayRecorder], which records it that way too.
+ * through [net.trilleo.hexium.core.replay.PlayInput] and
+ * [net.trilleo.hexium.core.replay.ReplayRecorder], which records it that way too.
  *
  * All times passed in are raw song time: [judgementOffsetMs] (offset B) is subtracted from them.
  *
