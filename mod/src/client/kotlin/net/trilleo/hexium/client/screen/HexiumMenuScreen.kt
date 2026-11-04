@@ -1,6 +1,5 @@
 package net.trilleo.hexium.client.screen
 
-import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.components.StringWidget
 import net.minecraft.client.gui.components.Tooltip
@@ -12,19 +11,21 @@ import net.minecraft.network.chat.Component
 import net.trilleo.hexium.client.chart.ChartLibrary
 import net.trilleo.hexium.client.chart.ChartPack
 import net.trilleo.hexium.client.session.HexiumSession
+import net.trilleo.hexium.client.session.StageWorld
 import net.trilleo.hexium.core.chart.DifficultyChart
 
 /** Hexium's menu, opened from the title screen. A plain list of charts until song select exists. */
 class HexiumMenuScreen(private val lastScreen: Screen) : Screen(TITLE) {
 	private val packs: List<ChartPack> = ChartLibrary.scan()
 	private var page = 0
-	private var status: Component = CommonComponents.EMPTY
 
 	override fun init() {
+		// Back here means any session is over, including a stage that failed to load.
+		HexiumSession.end()
 		val layout = HeaderAndFooterLayout(this)
 		layout.addTitleHeader(TITLE, font)
 
-		val perPage = ((layout.contentHeight - CONTENT_TOP_MARGIN - STATUS_HEIGHT + ROW_SPACING) / ROW_HEIGHT).coerceAtLeast(1)
+		val perPage = ((layout.contentHeight - CONTENT_TOP_MARGIN + ROW_SPACING) / ROW_HEIGHT).coerceAtLeast(1)
 		val pages = ((packs.size + perPage - 1) / perPage).coerceAtLeast(1)
 		page = page.coerceIn(0, pages - 1)
 
@@ -79,22 +80,15 @@ class HexiumMenuScreen(private val lastScreen: Screen) : Screen(TITLE) {
 			row.addChild(broken)
 			return row
 		}
-		for (chart in pack.charts) row.addChild(difficultyButton(title, chart))
+		for (chart in pack.charts) row.addChild(difficultyButton(chart))
 		return row
 	}
 
-	private fun difficultyButton(title: String, chart: DifficultyChart): Button {
+	private fun difficultyButton(chart: DifficultyChart): Button {
 		val difficulty = Component.translatable("hexium.difficulty.${chart.difficulty.name.lowercase()}")
-		val button = Button.builder(difficulty) {
-			status = Component.translatable("hexium.menu.selected", title, difficulty, chart.notes.size)
-		}.width(DIFFICULTY_WIDTH)
+		val button = Button.builder(difficulty) { StageWorld.enter(minecraft, this) }.width(DIFFICULTY_WIDTH)
 		if (!chart.isGroundOnly) button.tooltip(Tooltip.create(Component.translatable("hexium.menu.sky_notes")))
 		return button.build().also { it.active = chart.isGroundOnly }
-	}
-
-	override fun extractRenderState(graphics: GuiGraphicsExtractor, mouseX: Int, mouseY: Int, a: Float) {
-		super.extractRenderState(graphics, mouseX, mouseY, a)
-		graphics.centeredText(font, status, width / 2, height - STATUS_FROM_BOTTOM, STATUS_COLOR)
 	}
 
 	override fun onClose() {
@@ -107,9 +101,6 @@ class HexiumMenuScreen(private val lastScreen: Screen) : Screen(TITLE) {
 		const val CONTENT_TOP_MARGIN = 30
 		const val ROW_HEIGHT = 24
 		const val ROW_SPACING = 4
-		const val STATUS_HEIGHT = 14
-		const val STATUS_FROM_BOTTOM = 45
-		const val STATUS_COLOR = -1
 		const val TITLE_WIDTH = 140
 		const val DIFFICULTY_WIDTH = 64
 		const val FOOTER_BUTTON_WIDTH = 100

@@ -35,8 +35,10 @@ Hexium is client-only (`"environment": "client"` in `fabric.mod.json`), so nearl
 
 - The title screen gets one extra button that opens the mod's menu. That menu is the only place a `HexiumSession` is ever created.
 - Every mixin and event hook starts with `if (!HexiumSession.active()) return;`, except the title screen button, which only adds that button. Joining a normal world or server means no session, so vanilla behaviour stays as it was.
-- The stage is a template world bundled in the mod. It's copied into the mod's own folder (for example `.minecraft/hexium/stages/`), not `saves/`, so it never shows up in the vanilla world list. It's loaded on the integrated server with frozen game rules: no daylight cycle, no mobs, no random ticks, no weather.
-- The player entity is placed on the stand spot and locked. Gameplay never depends on the server; the world is just scenery.
+- The stage is a flat black floor made in code (`StageWorld`) and created fresh for each session in the mod's own folder, `.minecraft/hexium/stages/`, not `saves/`, so it never shows up in the vanilla world list. Making it in code means a Minecraft update can't ask to upgrade it. Chart-authored stages may bring template worlds in Milestone 8. It runs on the integrated server, with its rules frozen once the player joins: no daylight cycle, mobs, random ticks or weather.
+- The player is in adventure mode on Peaceful, placed on the stand spot. Gameplay never depends on the server; the world is just scenery.
+- While a session is active, mixins hold the player still (`KeyboardInput`), stop every key that method handles (`Minecraft.handleKeybinds`: attack, items, hotbar, inventory, chat, F1, F5 and so on) and hotbar scrolling, keep vanilla's tutorial from starting, since it would end itself for good outside survival, and replace vanilla's pause menu. The camera turns freely until Milestone 3 adds its limits. The HUD stays vanilla apart from the hunger bar, which is hidden. A player arriving in third person or with the HUD hidden gets the normal view, and their own comes back afterwards.
+- A session ends when the connection closes, and also whenever the title screen or the Hexium menu opens, so a failed load can't leave one running.
 
 ## Audio and clock
 

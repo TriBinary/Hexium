@@ -21,6 +21,17 @@ loom {
 	}
 }
 
+fabricApi {
+	// Client game tests: ./gradlew :mod:runClientGameTest
+	configureTests {
+		createSourceSet = true
+		modId = "hexium_gametest"
+		enableGameTests = false
+		enableClientGameTests = true
+		eula = true
+	}
+}
+
 dependencies {
 	// To change the versions see the gradle.properties file
 	minecraft("com.mojang:minecraft:${providers.gradleProperty("minecraft_version").get()}")
@@ -31,6 +42,11 @@ dependencies {
 	// The game rules, bundled inside the mod jar (jar-in-jar).
 	implementation(project(":core"))
 	include(project(":core"))
+}
+
+// The tests need a game window to run, but a build must at least keep them compiling.
+tasks.check {
+	dependsOn("gametestClasses")
 }
 
 tasks.processResources {

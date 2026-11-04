@@ -4,7 +4,6 @@
   "hexium.menu.no_charts": "没有找到谱面。请把谱面文件夹放到 .minecraft/hexium/charts。",
   "hexium.menu.broken": "已损坏",
   "hexium.menu.sky_notes": "此谱面包含天空音符，目前还无法游玩。",
-  "hexium.menu.selected": "%s，%s：%s 个音符。游玩功能将在后续更新中加入。",
   "hexium.difficulty.basic": "Basic",
   "hexium.difficulty.advanced": "Advanced",
   "hexium.difficulty.expert": "Expert",
@@ -13,5 +12,6 @@
   "hexium.audio_test.pause": "暂停",
   "hexium.audio_test.resume": "继续",
   "hexium.audio_test.rewind": "后退 3 秒",
-  "hexium.audio_test.failed": "无法播放歌曲：%s"
+  "hexium.audio_test.failed": "无法播放歌曲：%s",
+  "hexium.stage.leave": "离开舞台"
 }

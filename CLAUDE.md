@@ -80,4 +80,5 @@ docs/DESIGN.md.
 - Build + all tests: ./gradlew build
 - Core tests only: ./gradlew :core:test
 - Run client: ./gradlew :mod:runClient
+- Client game tests (opens a game window; tests are in mod/src/gametest): ./gradlew :mod:runClientGameTest
 - Lint charts (from Milestone 1): ./gradlew :tools:run --args="lint docs/examples"

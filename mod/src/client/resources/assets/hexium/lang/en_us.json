@@ -4,7 +4,6 @@
   "hexium.menu.no_charts": "No charts found. Put chart folders in .minecraft/hexium/charts.",
   "hexium.menu.broken": "Broken",
   "hexium.menu.sky_notes": "This chart has sky notes, which can't be played yet.",
-  "hexium.menu.selected": "%s, %s: %s notes. Playing comes in a later update.",
   "hexium.difficulty.basic": "Basic",
   "hexium.difficulty.advanced": "Advanced",
   "hexium.difficulty.expert": "Expert",
@@ -13,5 +12,6 @@
   "hexium.audio_test.pause": "Pause",
   "hexium.audio_test.resume": "Resume",
   "hexium.audio_test.rewind": "Back 3 s",
-  "hexium.audio_test.failed": "Can't play the song: %s"
+  "hexium.audio_test.failed": "Can't play the song: %s",
+  "hexium.stage.leave": "Leave Stage"
 }

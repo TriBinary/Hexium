@@ -10,6 +10,8 @@
     + The menu lists every chart it finds, including a built-in Test Pattern and any folders in `.minecraft/hexium/charts`.
     + Broken charts are marked and show their first problem, and the full list goes to the log.
     + Charts with sky notes are shown but can't be selected yet.
++ Choosing a difficulty now takes you to the stage, and Esc offers a way back to the menu.
+    + Notes aren't there yet: the stage is empty for now.
 
 #### Charts
 
@@ -26,6 +28,9 @@
 
 #### Gameplay
 
++ Added the stage: a plain floor you stand on, kept apart from your normal worlds.
+    + You can look around, but moving, jumping and action keys are off while you're on it.
+    + The hunger bar is hidden.
 + Added judging for ground taps and holds, with CHUNITHM's windows.
     + Hold ticks are judged on how long ago the key was last down.
 + Added scoring up to 1,010,000, combo and clear lamps (Full Combo, All Justice, All Justice Critical).
@@ -67,6 +72,7 @@
 
 + Added song playback through Hexium's own OpenAL source and an audio clock that follows it.
     + When the audio device changes or sounds reload, the song returns at the right place once the game has reloaded.
++ Added client game tests that load the stage in the real game and check that normal worlds are untouched.
 + Added an Audio Test screen with a debug overlay, for checking that the clock stays with the music over a whole song.
 + Added `rejudge` and `dump` to the command-line tools.
 + Added golden replays and property tests that guard the judge.

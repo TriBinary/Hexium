@@ -3,8 +3,12 @@
 	"package": "net.trilleo.hexium.client.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
+		"KeyboardInputMixin",
+		"MinecraftMixin",
+		"MouseHandlerMixin",
 		"MusicManagerMixin",
-		"SoundLibraryMixin"
+		"SoundLibraryMixin",
+		"TutorialMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

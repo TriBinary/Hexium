@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.client.screen.v1.Screens
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.TitleScreen
 import net.minecraft.network.chat.Component
+import net.trilleo.hexium.client.session.HexiumSession
 
 /**
  * The way into Hexium: a full-width button under Multiplayer. The rows from Multiplayer up move up
@@ -21,6 +22,8 @@ object TitleScreenButton {
 	fun register() {
 		ScreenEvents.AFTER_INIT.register { client, screen, _, _ ->
 			if (screen is TitleScreen) {
+				// No session outlives a return to the title screen, however it got here.
+				HexiumSession.end()
 				val widgets = Screens.getWidgets(screen)
 				val multiplayer = Component.translatable("menu.multiplayer")
 				// Demo mode has Reset Demo World in that row instead.

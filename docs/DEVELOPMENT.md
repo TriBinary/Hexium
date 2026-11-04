@@ -29,6 +29,7 @@ The Gradle wrapper downloads the right Gradle version, and Loom downloads Minecr
 | --- | --- |
 | `./gradlew build` | Builds every module and runs all tests |
 | `./gradlew :mod:runClient` | Starts Minecraft with Hexium in a dev environment |
+| `./gradlew :mod:runClientGameTest` | Runs the client game tests in `mod/src/gametest`. Opens a game window, and writes screenshots to `mod/build/run/clientGameTest/screenshots` |
 | `./gradlew :core:test` | Runs only the judge and chart tests (fast) |
 | `./gradlew :tools:run --args="lint docs/examples"` | Lints chart files or folders. A folder with a `meta.json` is also checked as a package, including that it has its `audio.ogg` |
 | `./gradlew :tools:run --args="rejudge docs/examples/basic.json play.hexreplay"` | Runs a replay through the judge and prints the result |
@@ -75,7 +76,7 @@ Parallel lanes that work well: after Milestone 1, `server` can build auth and ch
 - **`core` unit tests:** one file of synthetic input per rule in `docs/JUDGEMENT.md`. For example: "tap 20 ms late → Justice Critical", "hold released 120 ms before a tick → Attack on that tick", "slide with crosshair outside radius → Miss on those ticks", "flick too slow → no hit".
 - **Golden replays:** replays with their known scores live in `core/src/test/resources/golden`. Any change to the judge must keep them identical, or update them on purpose in the same PR (and raise `JudgementConfig.JUDGE_VERSION`). So far they come from scripted players, with scores worked out by hand in `GoldenReplayTest`. Real recorded plays join them from Milestone 2. Editing an example chart changes its hash, so its golden replays must be regenerated too.
 - **Property tests (jqwik):** shifting every input by the judgement offset B leaves the score unchanged when B is set to match. A steady straight swipe gets the same judgement at every frame rate (other results can differ by what one frame's sampling can, see [JUDGEMENT.md](JUDGEMENT.md)). Random input never breaks the judge, and its replay always gives the same results.
-- **Fabric client game tests:** the title button opens the menu; the menu loads the stage; joining a normal singleplayer world creates no session; a short chart plays to the results screen with autoplay.
+- **Fabric client game tests:** the title button opens the menu; the menu loads the stage; the stage holds the player still and blocks action keys while the camera still turns; leaving ends the session; joining a normal singleplayer world creates no session and the player can move. Still to come: a short chart plays to the results screen with autoplay. A button that disconnects must do it through the task queue (`StageWorld.leave` shows how): the test framework defers a disconnect made while handling a click, so the test would see a different order of events from the real game.
 - **Human playtest checklist per milestone:** offset calibration feels right; no drift after a 3-minute song; ground track readable while aiming at the corners; hold, slide and flick feel fair.
 
 ### Checking the clock
