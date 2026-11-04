@@ -19,7 +19,7 @@ Hexium has its own menu on the title screen. Your normal worlds and servers are 
 2. Put these in your `mods` folder: Hexium, [Fabric API](https://modrinth.com/mod/fabric-api) and [Fabric Language Kotlin](https://modrinth.com/mod/fabric-language-kotlin).
 3. Start Minecraft and open **Hexium** from the title screen.
 
-For the smoothest timing, play at 240 FPS or more and run the offset calibration in Hexium's settings once.
+For the smoothest timing, play at 240 FPS or more and press Calibrate in Hexium's menu once.
 
 ## Links
 

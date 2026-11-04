@@ -34,4 +34,4 @@ Clear lamps: Full Combo (no Miss), All Justice (nothing below Justice), All Just
 - **Visual offset (A):** shifts where notes are drawn relative to the music.
 - **Judgement offset (B):** shifts the judgement windows without moving the notes.
 
-CHUNITHM uses the same split ([settings](https://chunithm-org.pages.dev/basic/settings)). Both go on the mod's settings page with a calibration screen: tap to a metronome, and the mod suggests the values.
+CHUNITHM uses the same split ([settings](https://chunithm-org.pages.dev/basic/settings)). Both go on the mod's settings page with a calibration screen, which suggests the values in two steps. Tapping to clicks with eyes closed measures how late the player is to sound, and that's B. Tapping to moving notes with no sound and no offset applied measures Δv, how late they are to what they see, and A = B − Δv. Until the settings page arrives in Milestone 4, the calibration screen is on Hexium's menu, A and note speed are also on the pause screen, and all of it is saved in `settings.json`.

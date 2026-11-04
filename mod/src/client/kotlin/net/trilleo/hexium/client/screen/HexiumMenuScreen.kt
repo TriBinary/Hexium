@@ -47,6 +47,10 @@ class HexiumMenuScreen(private val lastScreen: Screen) : Screen(TITLE) {
 			Button.builder(Component.translatable("hexium.audio_test.title")) { openAudioTest() }.width(FOOTER_BUTTON_WIDTH).build(),
 		)
 		audioTest.active = audioTestPack() != null
+		val calibrate = footer.addChild(
+			Button.builder(Component.translatable("hexium.calibration.title")) { openCalibration() }.width(FOOTER_BUTTON_WIDTH).build(),
+		)
+		calibrate.active = calibrationPack() != null
 		footer.addChild(Button.builder(CommonComponents.GUI_BACK) { onClose() }.width(FOOTER_BUTTON_WIDTH).build())
 		val next = footer.addChild(pageButton(">", 1))
 		previous.active = page > 0
@@ -61,6 +65,17 @@ class HexiumMenuScreen(private val lastScreen: Screen) : Screen(TITLE) {
 	private fun openAudioTest() {
 		val pack = audioTestPack() ?: return
 		val screen = AudioTestScreen(this, pack)
+		HexiumSession.start()
+		minecraft.gui.setScreen(screen)
+	}
+
+	/** It needs clicks exactly on the beat, so only the bundled click track will do. */
+	private fun calibrationPack(): ChartPack? =
+		packs.firstOrNull { it.errors.isEmpty() && it.charts.isNotEmpty() && it.meta?.id == CLICK_TRACK_PACK }
+
+	private fun openCalibration() {
+		val pack = calibrationPack() ?: return
+		val screen = CalibrationScreen(this, pack)
 		HexiumSession.start()
 		minecraft.gui.setScreen(screen)
 	}
@@ -121,6 +136,7 @@ class HexiumMenuScreen(private val lastScreen: Screen) : Screen(TITLE) {
 	}
 
 	private companion object {
+		const val CLICK_TRACK_PACK = "test-pattern"
 		val LOGGER = LoggerFactory.getLogger(Hexium.MOD_ID)
 		val TITLE: Component = Component.translatable("hexium.menu.title")
 		/** How far HeaderAndFooterLayout keeps its contents below the header. */
@@ -129,7 +145,7 @@ class HexiumMenuScreen(private val lastScreen: Screen) : Screen(TITLE) {
 		const val ROW_SPACING = 4
 		const val TITLE_WIDTH = 140
 		const val DIFFICULTY_WIDTH = 64
-		const val FOOTER_BUTTON_WIDTH = 100
+		const val FOOTER_BUTTON_WIDTH = 88
 		const val PAGE_BUTTON_WIDTH = 20
 	}
 }

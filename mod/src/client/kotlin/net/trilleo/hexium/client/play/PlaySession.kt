@@ -41,7 +41,8 @@ class PlaySession private constructor(
 
 	val judgeChart: JudgeChart = JudgeChart.compile(chart)
 	val clock = AudioClock(stream)
-	val recorder = ReplayRecorder(judgeChart, Replay.hashOf(chartFile), JUDGEMENT_OFFSET_MS, expectedEvents())
+	val judgementOffsetMs = PlaySettings.judgementOffsetMs.toDouble()
+	val recorder = ReplayRecorder(judgeChart, Replay.hashOf(chartFile), judgementOffsetMs, expectedEvents())
 	val track = GroundTrack(chart)
 	private val endMs = chart.lastNoteEndMs() + TAIL_MS
 	private val headJudged = BooleanArray(chart.notes.size)
@@ -164,9 +165,6 @@ class PlaySession private constructor(
 
 		/** Room for this frame rate without growing during play, on top of the notes' own presses. */
 		private const val EXPECTED_SAMPLES_PER_SECOND = 2000
-
-		/** Calibration sets this later. */
-		private const val JUDGEMENT_OFFSET_MS = 0.0
 
 		/** Aiming arrives with sky notes. Until then the crosshair stays mid-screen, on the same code path. */
 		private const val REST_AIM = 0.5f

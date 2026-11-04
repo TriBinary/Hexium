@@ -124,7 +124,7 @@ object TrackRenderer {
 			if (track.isHold(i)) {
 				// A body runs down to the line and stops there, shortening as it's played. During the
 				// rewind after a pause, what was already played doesn't come round again.
-				val near = maxOf(start, 0.0, GroundTrack.distance(play.playedUntilMs, drawMs, blocksPerSecond))
+				val near = maxOf(start, 0.0, GroundTrack.distance(play.playedUntilMs - play.judgementOffsetMs, drawMs, blocksPerSecond))
 				val far = minOf(GroundTrack.distance(track.endMs(i), drawMs, blocksPerSecond), StageGeometry.TRACK_LENGTH)
 				if (far > near) {
 					val lane = track.lane(i)
@@ -147,9 +147,9 @@ object TrackRenderer {
 	private fun drawNotes(play: PlaySession, buffer: VertexConsumer) {
 		val track = play.track
 		val laneCount = play.chart.laneCount
-		// The judge works in song time and notes are drawn in draw time, so keep a note for whichever is behind.
+		// The judge works in song time minus B and notes are drawn in draw time, so keep a note for whichever is behind.
 		val config = play.judgeChart.config
-		val oldest = minOf(drawMs, songMs) - maxOf(config.attackMs, config.easyAttackMs) - KEEP_AFTER_WINDOW_MS
+		val oldest = minOf(drawMs, songMs - play.judgementOffsetMs) - maxOf(config.attackMs, config.easyAttackMs) - KEEP_AFTER_WINDOW_MS
 		var drawn = 0
 		var i = track.firstEndingFrom(oldest)
 		while (i < track.size) {

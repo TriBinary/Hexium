@@ -17,6 +17,7 @@ import net.trilleo.hexium.client.input.LaneInput
 import net.trilleo.hexium.client.play.PlaySettings
 import net.trilleo.hexium.client.play.TrackRenderer
 import net.trilleo.hexium.client.play.PlaySession
+import net.trilleo.hexium.client.screen.CalibrationScreen
 import net.trilleo.hexium.client.screen.HexiumMenuScreen
 import net.trilleo.hexium.client.screen.ResultsScreen
 import net.trilleo.hexium.client.screen.StageMenuScreen
@@ -29,6 +30,7 @@ import net.trilleo.hexium.core.judge.Judgement
 import net.trilleo.hexium.core.replay.ReplayFile
 import net.trilleo.hexium.core.replay.ReplayEvent
 import net.trilleo.hexium.core.replay.ReplayJudge
+import net.trilleo.hexium.core.settings.PlayerSettings
 import org.lwjgl.sdl.SDLTimer
 
 /** Runs in the real game. See docs/DEVELOPMENT.md. */
@@ -36,12 +38,108 @@ class HexiumClientGameTest : FabricClientGameTest {
 	override fun runTest(context: ClientGameTestContext) {
 		context.waitForScreen(TitleScreen::class.java)
 		context.takeScreenshot("title")
+		// The game folder stays between runs, and so do its settings.
+		context.runOnClient<RuntimeException> { PlaySettings.reset() }
 		// Songs play on a real audio device. Keep them quiet.
 		context.runOnClient<RuntimeException> { it.options.getSoundSourceOptionInstance(SoundSource.MASTER).set(0.0) }
 		theStageLocksThePlayerAndLeavesCleanly(context)
 		aChartPlaysToTheEndAndItsReplayMatches(context)
 		notesDrawWithImprovedTransparency(context)
+		calibrationSuggestsAndSavesOffsets(context)
 		normalWorldsAreUntouched(context)
+	}
+
+	/** A bot taps late by known amounts, so the right answers are known too. */
+	private fun calibrationSuggestsAndSavesOffsets(context: ClientGameTestContext) {
+		context.clickScreenButton("hexium.title_button")
+		context.waitForScreen(HexiumMenuScreen::class.java)
+		context.clickScreenButton("hexium.calibration.title")
+		context.waitForScreen(CalibrationScreen::class.java)
+		// Songs are kept silent in these tests, and this step won't start without sound.
+		context.takeScreenshot("calibration_no_sound")
+		context.clickScreenButton("gui.cancel")
+		context.waitForScreen(HexiumMenuScreen::class.java)
+		context.runOnClient<RuntimeException> { it.options.getSoundSourceOptionInstance(SoundSource.MASTER).set(QUIET_VOLUME) }
+		context.clickScreenButton("hexium.calibration.title")
+		context.waitForScreen(CalibrationScreen::class.java)
+		context.takeScreenshot("calibration_intro")
+
+		// Leaving part way lets the keys go back to normal.
+		context.clickScreenButton("hexium.calibration.start")
+		context.waitFor({ LaneInput.capturing }, SETTLE_TICKS)
+		context.clickScreenButton("gui.cancel")
+		context.waitForScreen(HexiumMenuScreen::class.java)
+		context.runOnClient<RuntimeException> {
+			check(!LaneInput.capturing) { "cancelling left the screen reading keys" }
+			check(!HexiumSession.active()) { "cancelling left a session" }
+		}
+		context.clickScreenButton("hexium.calibration.title")
+		context.waitForScreen(CalibrationScreen::class.java)
+		val screen = context.computeOnClient<CalibrationScreen, RuntimeException> { it.gui.screen() as CalibrationScreen }
+
+		// Uneven taps are sent back to try again.
+		context.clickScreenButton("hexium.calibration.start")
+		context.waitFor({ screen.step == CalibrationScreen.Step.LISTENING && screen.clock!!.songTimeMs >= CLOCK_SETTLED_MS }, COUNTDOWN_TICKS)
+		context.runOnClient<RuntimeException> { pushTaps(screen, TAPS_FOR_A_STEP) { beat -> if (beat % 2 == 0) -UNEVEN_MS else UNEVEN_MS } }
+		context.waitFor({ screen.step == CalibrationScreen.Step.LISTEN_INTRO }, SETTLE_TICKS)
+
+		context.clickScreenButton("hexium.calibration.start")
+		context.waitFor({ screen.step == CalibrationScreen.Step.LISTENING && screen.clock!!.songTimeMs >= CLOCK_SETTLED_MS }, COUNTDOWN_TICKS)
+		context.runOnClient<RuntimeException> { pushTaps(screen, TAPS_FOR_A_STEP) { TAP_LATE_TO_SOUND_MS } }
+		context.waitFor({ screen.step == CalibrationScreen.Step.WATCH_INTRO }, SETTLE_TICKS)
+
+		context.clickScreenButton("hexium.calibration.start")
+		context.waitFor({ screen.step == CalibrationScreen.Step.WATCHING && screen.clock!!.songTimeMs >= CLOCK_SETTLED_MS }, COUNTDOWN_TICKS)
+		context.takeScreenshot("calibration_notes")
+		context.runOnClient<RuntimeException> { pushTaps(screen, TAPS_FOR_A_STEP) { TAP_LATE_TO_NOTES_MS } }
+		context.waitFor({ screen.step == CalibrationScreen.Step.REVIEW }, SETTLE_TICKS)
+		context.takeScreenshot("calibration_review")
+		context.runOnClient<RuntimeException> {
+			val judgement = screen.suggestedJudgementOffsetMs
+			val visual = screen.suggestedVisualOffsetMs
+			check(Math.abs(judgement - TAP_LATE_TO_SOUND_MS) <= MAX_CALIBRATION_ERROR_MS) { "suggested B $judgement" }
+			check(Math.abs(visual - (TAP_LATE_TO_SOUND_MS - TAP_LATE_TO_NOTES_MS)) <= MAX_CALIBRATION_ERROR_MS) { "suggested A $visual" }
+		}
+		val (visual, judgement) = context.computeOnClient<Pair<Int, Int>, RuntimeException> { screen.suggestedVisualOffsetMs to screen.suggestedJudgementOffsetMs }
+		context.clickScreenButton("hexium.calibration.save")
+		context.waitForScreen(HexiumMenuScreen::class.java)
+		context.runOnClient<RuntimeException> {
+			check(!HexiumSession.active()) { "closing calibration left a session" }
+			check(PlaySettings.visualOffsetMs == visual && PlaySettings.judgementOffsetMs == judgement) { "the offsets weren't kept" }
+			PlaySettings.load()
+			check(PlaySettings.visualOffsetMs == visual && PlaySettings.judgementOffsetMs == judgement) { "the offsets weren't saved to the file" }
+		}
+
+		// A play takes B from the settings and its replay records it.
+		context.clickScreenButton("hexium.difficulty.basic")
+		context.waitFor({ HexiumSession.play()?.state == PlaySession.State.PLAYING }, LOAD_TICKS)
+		context.runOnClient<RuntimeException> {
+			val replay = HexiumSession.play()!!.recorder.toReplay()
+			check(replay.judgementOffsetMs == judgement.toDouble()) { "the replay has B ${replay.judgementOffsetMs}" }
+			it.pauseGame(false)
+		}
+		context.waitForScreen(StageMenuScreen::class.java)
+		context.clickScreenButton("hexium.stage.leave")
+		context.waitForScreen(HexiumMenuScreen::class.java)
+		context.clickScreenButton("gui.back")
+		context.waitForScreen(TitleScreen::class.java)
+		context.runOnClient<RuntimeException> {
+			PlaySettings.reset()
+			it.options.getSoundSourceOptionInstance(SoundSource.MASTER).set(0.0)
+		}
+	}
+
+	/** Each tap is stamped on a beat plus its error, ahead of time, the way SDL stamps a real key. */
+	private fun pushTaps(screen: CalibrationScreen, count: Int, errorMs: (Int) -> Int) {
+		val clock = screen.clock!!
+		val now = SDLTimer.SDL_GetTicksNS()
+		val firstBeat = Math.ceil(clock.songTimeAt(now) / CLICK_BEAT_MS).toInt() + 1
+		for (i in 0 until count) {
+			val beat = firstBeat.coerceAtLeast(0) + i
+			val aheadMs = beat * CLICK_BEAT_MS + errorMs(beat) - clock.songTimeAt(now)
+			LaneInput.push(0, true, now + (aheadMs * NANOS_PER_MS).toLong())
+			LaneInput.push(0, false, now + (aheadMs * NANOS_PER_MS).toLong())
+		}
 	}
 
 	private fun theStageLocksThePlayerAndLeavesCleanly(context: ClientGameTestContext) {
@@ -290,7 +388,7 @@ class HexiumClientGameTest : FabricClientGameTest {
 		context.clickScreenButton("hexium.stage.more")
 		context.waitTick()
 		context.runOnClient<RuntimeException> {
-			check(PlaySettings.noteSpeed > PlaySettings.DEFAULT_NOTE_SPEED) { "the note speed button did nothing" }
+			check(PlaySettings.noteSpeed > PlayerSettings.DEFAULT_NOTE_SPEED) { "the note speed button did nothing" }
 			PlaySettings.changeVisualOffset(VISUAL_OFFSET_STEPS)
 		}
 		context.takeScreenshot("pause_menu")
@@ -375,6 +473,14 @@ class HexiumClientGameTest : FabricClientGameTest {
 		const val PAUSE_AT_MS = 3250.0
 
 		const val COUNTDOWN_TICKS = 100
+		const val QUIET_VOLUME = 0.01
+		const val TAPS_FOR_A_STEP = 18
+		const val CLICK_BEAT_MS = 500.0
+		const val UNEVEN_MS = 150
+		const val TAP_LATE_TO_SOUND_MS = 40
+		const val TAP_LATE_TO_NOTES_MS = 10
+		const val CLOCK_SETTLED_MS = 1000.0
+		const val MAX_CALIBRATION_ERROR_MS = 4
 		const val TAP_BEFORE_PAUSE_LANE = 3
 		const val MIN_REWIND_MS = 2000.0
 

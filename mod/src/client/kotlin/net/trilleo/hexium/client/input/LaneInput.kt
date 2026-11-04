@@ -48,15 +48,18 @@ object LaneInput {
 		count = 0
 	}
 
+	/** True while the calibration screen is reading taps, with no play going on. */
+	var capturing = false
+
 	/** Returns true if the event was a lane key meant for the game, so vanilla shouldn't see it. */
 	@JvmStatic
 	fun onKeyEvent(event: Long): Boolean {
-		val play = HexiumSession.play() ?: return false
+		if (!capturing && HexiumSession.play()?.acceptingInput != true) return false
 		val lane = laneOf(SDL_KeyboardEvent.nscancode(event))
-		if (lane < 0 || !play.acceptingInput) return false
+		if (lane < 0) return false
 		// Taken while a screen is open too, since the pause rule needs to know which keys are down on resuming.
 		if (!SDL_KeyboardEvent.nrepeat(event)) push(lane, SDL_KeyboardEvent.ndown(event), SDL_KeyboardEvent.ntimestamp(event))
-		return HexiumSession.noScreenOpen()
+		return capturing || HexiumSession.noScreenOpen()
 	}
 
 	fun push(lane: Int, isDown: Boolean, atNs: Long) {
