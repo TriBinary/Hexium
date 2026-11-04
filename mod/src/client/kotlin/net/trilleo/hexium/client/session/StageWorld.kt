@@ -15,16 +15,20 @@ import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.gui.screens.TitleScreen
 import net.minecraft.client.gui.screens.worldselection.WorldOpenFlows
 import net.minecraft.client.multiplayer.ClientLevel
+import net.minecraft.core.BlockPos
 import net.minecraft.core.HolderLookup
 import net.minecraft.core.HolderSet
 import net.minecraft.core.registries.Registries
 import net.minecraft.server.MinecraftServer
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.util.Mth
 import net.minecraft.world.Difficulty
 import net.minecraft.world.item.DyeColor
 import net.minecraft.world.level.GameType
 import net.minecraft.world.level.LevelSettings
 import net.minecraft.world.level.WorldDataConfiguration
 import net.minecraft.world.level.biome.Biomes
+import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.Blocks
 import net.minecraft.world.level.gamerules.GameRules
 import net.minecraft.world.level.levelgen.FlatLevelSource
@@ -40,7 +44,7 @@ import net.trilleo.hexium.client.screen.HexiumMenuScreen
 import org.slf4j.LoggerFactory
 
 /**
- * The stage: a flat floor with nothing else, made fresh for each session in Hexium's own folder, so
+ * The stage: a flat floor with only the player's platform on it, made fresh for each session in Hexium's own folder, so
  * it never shows up in the vanilla world list. Gameplay never depends on the server: the world is
  * just scenery. Made in code rather than bundled, so a Minecraft update can't ask to upgrade it.
  */
@@ -148,9 +152,26 @@ object StageWorld {
 		level.dimensionTypeRegistration().value().defaultClock().ifPresent { clock ->
 			server.clockManager().setTotalTicks(clock, NOON_TICKS)
 		}
-		val y = level.minY + StageGeometry.FLOOR_THICKNESS.toDouble()
+		val floorY = level.minY + StageGeometry.FLOOR_THICKNESS
+		buildPlatform(level, floorY)
+		val y = (floorY + StageGeometry.STAND_HEIGHT).toDouble()
 		for (player in server.playerList.players) {
 			player.teleportTo(level, StageGeometry.STAND_X, y, StageGeometry.STAND_Z, emptySet(), StageGeometry.REST_YAW, StageGeometry.REST_PITCH, true)
+		}
+	}
+
+	/** What the player stands on, made before they're moved up to it. */
+	private fun buildPlatform(level: ServerLevel, floorY: Int) {
+		val state = Blocks.CONCRETE.pick(DyeColor.GRAY).defaultBlockState()
+		val centreX = Mth.floor(StageGeometry.STAND_X)
+		val centreZ = Mth.floor(StageGeometry.STAND_Z)
+		val reach = StageGeometry.PLATFORM_REACH
+		for (x in centreX - reach..centreX + reach) {
+			for (z in centreZ - reach..centreZ + reach) {
+				for (y in floorY until floorY + StageGeometry.STAND_HEIGHT) {
+					level.setBlock(BlockPos(x, y, z), state, Block.UPDATE_ALL)
+				}
+			}
 		}
 	}
 

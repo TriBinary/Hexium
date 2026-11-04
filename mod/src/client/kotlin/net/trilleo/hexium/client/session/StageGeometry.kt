@@ -11,19 +11,26 @@ object StageGeometry {
 	/** Facing +Z, down the lanes. */
 	const val REST_YAW = 0f
 
-	/** Looking at the middle of the screen, 3 blocks up and 8 away, from eyes 1.62 up. */
-	const val REST_PITCH = -9.8f
+	/** How far above the floor the player stands, on a platform, so the lanes don't flatten toward the horizon. */
+	const val STAND_HEIGHT = 3
+
+	/** How far the platform reaches each side of the block the player is on. */
+	const val PLATFORM_REACH = 1
+
+	/** Looking down at the middle of the screen, 3 blocks up and 8 away, from eyes 4.62 up. */
+	const val REST_PITCH = 11.4f
 
 	/** Where the screen's bottom edge is, 8 blocks in front of the player. */
 	const val JUDGEMENT_Z = STAND_Z + 8.0
 
-	const val LANE_WIDTH = 2.0
+	/** Four of these make the track as wide as the sky screen will be, 12 blocks. */
+	const val LANE_WIDTH = 3.0
 
 	/** How far up the lanes the track runs from the judgement line. Notes appear at the far end. */
 	const val TRACK_LENGTH = 64.0
 
 	/** How far the track carries on past the line, so a late note still has floor under it. */
-	const val TRACK_BEFORE_LINE = 4.0
+	const val TRACK_BEFORE_LINE = 3.5
 
 	/** Facing +Z, the player's left is +X, so the first lane is on that side. */
 	fun laneCentreX(lane: Int, laneCount: Int): Double = STAND_X + ((laneCount - 1) / 2.0 - lane) * LANE_WIDTH

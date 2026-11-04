@@ -28,10 +28,10 @@ object TrackRenderer {
 	private const val BODY_LIFT = 0.04
 	private const val DIVIDER_WIDTH = 0.06
 	private const val LINE_DEPTH = 0.3
-	private const val NOTE_WIDTH = 1.7
+	private const val NOTE_WIDTH = 2.6
 	private const val NOTE_DEPTH = 0.8
 	private const val NOTE_HEIGHT = 0.4
-	private const val BODY_WIDTH = 1.3
+	private const val BODY_WIDTH = 2.0
 	private const val GLOW_LENGTH = 16.0
 
 	/** The last stretch of the track, where notes fade in instead of popping up. */

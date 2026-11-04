@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.TitleScreen
 import net.minecraft.client.gui.screens.inventory.InventoryScreen
 import net.minecraft.client.tutorial.TutorialSteps
+import net.minecraft.core.BlockPos
 import net.minecraft.sounds.SoundSource
 import net.minecraft.world.Difficulty
 import net.minecraft.world.level.GameType
@@ -52,7 +53,7 @@ class HexiumClientGameTest : FabricClientGameTest {
 		context.clickScreenButton("hexium.difficulty.basic")
 		context.waitFor({ it.player != null && it.level != null && it.gui.screen() == null }, LOAD_TICKS)
 		// The stand spot arrives from the server after joining.
-		context.waitFor({ it.player!!.x == 0.5 && it.player!!.z == 0.5 }, LOAD_TICKS)
+		context.waitFor({ it.player!!.x == 0.5 && it.player!!.z == 0.5 && it.player!!.y > it.level!!.minY + StageGeometry.FLOOR_THICKNESS }, LOAD_TICKS)
 		context.waitTicks(SETTLE_TICKS)
 
 		context.runOnClient<RuntimeException> { minecraft ->
@@ -65,7 +66,15 @@ class HexiumClientGameTest : FabricClientGameTest {
 			check(server.gameRules.get(GameRules.RANDOM_TICK_SPEED) == 0) { "random ticks are on" }
 			check(minecraft.level!!.difficulty == Difficulty.PEACEFUL) { "not on Peaceful" }
 			val player = minecraft.player!!
-			check(player.y == minecraft.level!!.minY + 1.0) { "not standing on the floor: y ${player.y}" }
+			val standY = minecraft.level!!.minY + StageGeometry.FLOOR_THICKNESS + StageGeometry.STAND_HEIGHT
+			check(player.y == standY.toDouble()) { "not on the platform: y ${player.y}" }
+			check(player.onGround()) { "standing on nothing" }
+			val floorY = minecraft.level!!.minY + StageGeometry.FLOOR_THICKNESS
+			val toMiddleOfScreen = Math.toDegrees(Math.atan((player.eyeY - floorY - SCREEN_MIDDLE_HEIGHT) / (StageGeometry.JUDGEMENT_Z - player.z)))
+			check(Math.abs(toMiddleOfScreen - StageGeometry.REST_PITCH) < MAX_PITCH_ERROR) { "the rest view isn't on the screen's middle, which is $toMiddleOfScreen down" }
+			val reach = StageGeometry.PLATFORM_REACH
+			check(!minecraft.level!!.getBlockState(BlockPos(reach, floorY, reach)).isAir) { "the platform has no corner" }
+			check(minecraft.level!!.getBlockState(BlockPos(reach + 1, floorY, reach + 1)).isAir) { "the platform is too wide" }
 			check(player.yRot == StageGeometry.REST_YAW && player.xRot == StageGeometry.REST_PITCH) {
 				"not in the rest view: ${player.yRot}, ${player.xRot}"
 			}
@@ -80,7 +89,7 @@ class HexiumClientGameTest : FabricClientGameTest {
 		input.holdKey { it.keyLeft }
 		input.holdKey { it.keyJump }
 		input.holdKey { it.keyShift }
-		// Sampled each tick, since a jump would be back on the floor by the end.
+		// Sampled each tick, since a jump would be back on the platform by the end.
 		repeat(HOLD_TICKS) {
 			context.waitTick()
 			check(position(context) == start) { "the player moved from $start to ${position(context)}" }
@@ -319,6 +328,9 @@ class HexiumClientGameTest : FabricClientGameTest {
 
 		/** Between notes in basic.json. */
 		const val PAUSE_AT_MS = 3250.0
+
+		const val SCREEN_MIDDLE_HEIGHT = 3.0
+		const val MAX_PITCH_ERROR = 0.1
 
 		const val VISUAL_OFFSET_STEPS = 10
 

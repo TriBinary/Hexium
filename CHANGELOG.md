@@ -31,7 +31,7 @@
     + Presses are timed from when the key went down, not when the game got round to it.
     + Taps and holds come down the four lanes to a judgement line, with each lane lighting up while its key is down.
     + The pause screen sets the note speed, which changes how far away notes appear but never their timing, and a visual offset, which shifts where notes are drawn relative to the music. These reset when you quit the game for now.
-+ Added the stage: a plain floor you stand on, kept apart from your normal worlds.
++ Added the stage: a plain floor with a raised platform you stand on, looking down the lanes, kept apart from your normal worlds.
     + You can look around, but moving, jumping and action keys are off while you're on it.
     + The hunger bar is hidden.
 + Added judging for ground taps and holds, with CHUNITHM's windows.
