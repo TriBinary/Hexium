@@ -52,6 +52,7 @@
 
 + Added judging for sky taps, slides and flicks.
     + A swipe that jumps over a flick between two frames still hits it, so low frame rates stay fair.
++ Pausing is fair for sky notes too: a mouse button you changed while paused counts from the moment you paused, and moving the mouse while paused never counts as a swipe through a flick.
 
 #### Online
 

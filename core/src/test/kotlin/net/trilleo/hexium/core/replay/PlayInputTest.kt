@@ -11,6 +11,7 @@ import net.trilleo.hexium.core.chart.Difficulty
 import net.trilleo.hexium.core.chart.DifficultyChart
 import net.trilleo.hexium.core.chart.MeterChange
 import net.trilleo.hexium.core.chart.Note
+import net.trilleo.hexium.core.chart.SkyButton
 import net.trilleo.hexium.core.judge.Judge
 import net.trilleo.hexium.core.judge.JudgeChart
 import net.trilleo.hexium.core.judge.Judgement
@@ -89,8 +90,9 @@ class PlayInputTest {
 		assertEquals(0, recorder.toReplay().eventCount)
 		input.frame(5000.0, 0.5f, 0.5f)
 		assertTrue(input.isOpen)
+		// Where the crosshair was when judging reopened, then that frame's own sample.
 		input.frame(5000.0 + PlayInput.HOLD_BACK_MS, 0.5f, 0.5f)
-		assertEquals(1, recorder.toReplay().eventCount)
+		assertEquals(listOf(5000.0, 5000.0), allEventTimes())
 	}
 
 	@Test
@@ -323,12 +325,12 @@ class PlayInputTest {
 	}
 
 	@Test
-	fun pausingSendsEverySampleStillWaiting() {
+	fun pausingSendsEverySampleStillWaitingAndOneAtThePausePoint() {
 		input.frame(1000.0, 0.5f, 0.5f)
 		input.frame(1010.0, 0.5f, 0.5f)
 		assertEquals(0, recorder.toReplay().eventCount)
 		input.pause(1012.0)
-		assertEquals(listOf(1000.0, 1010.0), allEventTimes())
+		assertEquals(listOf(1000.0, 1010.0, 1012.0), allEventTimes())
 	}
 
 	@Test
@@ -461,6 +463,7 @@ class PlayInputTest {
 		while (i < 200_000) {
 			val time = i * 2.0
 			if (i % 50 == 0) play.lane(i % 4, i % 100 == 0, time - 3.0)
+			if (i % 70 == 0) play.button(if (i % 140 == 0) SkyButton.L else SkyButton.R, i % 280 < 140, time - 2.0, 0.4f, 0.6f)
 			play.frame(time, 0.5f, 0.5f)
 			if (i % 10_000 == 9_999) {
 				play.pause(time)
