@@ -81,6 +81,8 @@ Parallel lanes that work well: after Milestone 1, `server` can build auth and ch
 
 ### Milestone 2 gate
 
+Passed on macOS on 2026-11-04, with the recorded plays in `golden/recorded`. Steps 1 and 2 haven't been run on Windows yet.
+
 Real keys go through SDL, which the game tests can't reach, so this needs a person. F6 shows the numbers during a play. If you can, repeat 1 and 2 on Windows, where SDL's key timestamps may be coarser.
 
 1. **Timing feels tight.** Calibrate, then play **Test Pattern → Basic** and **Advanced**. The ms under the judgement should sit around 0 when you're on the beat, and notes should meet the line on the clicks. Then set Max Framerate to 30 and tap: `key stamp age` should spread from about 0 up to a frame (33 ms) or more. Always near 0 means the OS stamps aren't real, and timing is really down to the frame. `late keys` should stay at 0 at 30 FPS and above, though a single long frame can add some.
