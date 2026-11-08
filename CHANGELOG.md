@@ -23,6 +23,7 @@
     + Checks charts and packages against every rule in the chart format.
     + Warns when a moment is too dense to play with one hand on the keys.
 + Added basic, advanced and expert example charts for charters to learn the format from.
++ The built-in Test Pattern has a new Expert chart: 90 seconds of sky taps, slides and flicks all over the screen, corners included, mixed with ground notes.
 + Added a command-line chart linter, `lint`, that checks chart files and folders against the format.
 
 #### Gameplay

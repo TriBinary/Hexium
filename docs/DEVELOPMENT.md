@@ -20,7 +20,7 @@ The Gradle wrapper downloads the right Gradle version, and Loom downloads Minecr
 | `tools/` | Command-line tools: chart lint, replay re-judge, replay dump. |
 | `docs/` | Design, specs and developer docs (upper-case file names). |
 | `docs/examples/` | Hand-written example charts in the writer's layout, used as test fixtures. |
-| `mod/src/client/resources/hexium_packs/test-pattern/` | The chart pack bundled in the mod: a click track, `basic.json` (an exact copy of the example chart) and a 3-minute `advanced.json` for drift tests. |
+| `mod/src/client/resources/hexium_packs/test-pattern/` | The chart pack bundled in the mod: a click track, `basic.json` (an exact copy of the example chart), a 3-minute `advanced.json` for drift tests, and a 90-second `expert.json` with sky notes in every corner, mixed with ground notes, for the Milestone 3 readability playtest. |
 | `CHANGELOG.md` | Player-facing change log, see [RELEASING.md](RELEASING.md). |
 
 ## Commands

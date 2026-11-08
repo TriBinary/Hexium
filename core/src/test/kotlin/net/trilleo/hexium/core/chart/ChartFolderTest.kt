@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 
 class ChartFolderTest {
 	private val meta = File("../mod/src/client/resources/hexium_packs/test-pattern/meta.json").readText()
-		.replace("""[ "BASIC", "ADVANCED" ]""", """[ "BASIC" ]""")
+		.replace("""[ "BASIC", "ADVANCED", "EXPERT" ]""", """[ "BASIC" ]""")
 	private val basic = File("../docs/examples/basic.json").readText()
 
 	private val audio = ChartFolder.AUDIO_FILE
