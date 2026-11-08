@@ -2,9 +2,10 @@ package net.trilleo.hexium.core.settings
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class PlayerSettingsTest {
-	private val custom = PlayerSettings(noteSpeed = 60, visualOffsetMs = -35, judgementOffsetMs = 42)
+	private val custom = PlayerSettings(noteSpeed = 60, visualOffsetMs = -35, judgementOffsetMs = 42, mouseSensitivity = 150, playFov = 80, viewAssist = 3)
 
 	@Test
 	fun whatIsWrittenReadsBackTheSame() {
@@ -61,7 +62,37 @@ class PlayerSettingsTest {
 
 	@Test
 	fun inRangeClampsEveryField() {
-		val clamped = PlayerSettings(noteSpeed = 1, visualOffsetMs = 9999, judgementOffsetMs = -9999).inRange()
-		assertEquals(PlayerSettings(PlayerSettings.MIN_NOTE_SPEED, PlayerSettings.MAX_OFFSET_MS, -PlayerSettings.MAX_OFFSET_MS), clamped)
+		val clamped = PlayerSettings(noteSpeed = 1, visualOffsetMs = 9999, judgementOffsetMs = -9999, mouseSensitivity = 1, playFov = 500, viewAssist = -2).inRange()
+		val expected = PlayerSettings(
+			PlayerSettings.MIN_NOTE_SPEED, PlayerSettings.MAX_OFFSET_MS, -PlayerSettings.MAX_OFFSET_MS,
+			PlayerSettings.MIN_MOUSE_SENSITIVITY, PlayerSettings.MAX_PLAY_FOV, 0,
+		)
+		assertEquals(expected, clamped)
+		val high = PlayerSettings(mouseSensitivity = 9999, playFov = 1, viewAssist = 99).inRange()
+		assertEquals(PlayerSettings(mouseSensitivity = PlayerSettings.MAX_MOUSE_SENSITIVITY, playFov = PlayerSettings.MIN_PLAY_FOV, viewAssist = PlayerSettings.MAX_VIEW_ASSIST), high)
+	}
+
+	/** A new player turns the camera as vanilla does, sees vanilla's default view, and gets no help. */
+	@Test
+	fun comfortSettingsStartAsVanilla() {
+		val settings = PlayerSettings()
+		assertEquals(100, settings.mouseSensitivity)
+		assertEquals(70, settings.playFov)
+		assertEquals(0, settings.viewAssist)
+	}
+
+	/** A file from before these settings existed still reads, with their defaults. */
+	@Test
+	fun anOlderFileGetsTheComfortDefaults() {
+		val parsed = PlayerSettings.parse("""{ "formatVersion": 1, "noteSpeed": 40, "visualOffsetMs": 5, "judgementOffsetMs": -5 }""")
+		assertEquals(PlayerSettings(noteSpeed = 40, visualOffsetMs = 5, judgementOffsetMs = -5), parsed)
+	}
+
+	@Test
+	fun comfortSettingsAreWrittenUnderTheirNames() {
+		val text = PlayerSettings.write(custom)
+		for (name in listOf("\"mouseSensitivity\": 150", "\"playFov\": 80", "\"viewAssist\": 3")) {
+			assertTrue(name in text, "$name in $text")
+		}
 	}
 }

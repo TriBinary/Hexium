@@ -3,6 +3,7 @@
 	"package": "net.trilleo.hexium.client.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
+		"CameraMixin",
 		"KeyboardInputMixin",
 		"MinecraftMixin",
 		"MouseHandlerMixin",

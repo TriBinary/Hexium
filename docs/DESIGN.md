@@ -65,7 +65,7 @@ The aim point is where the camera's look ray meets the screen plane. Because the
 
 - A note's hit area is measured in screen-plane units, so it doesn't depend on FOV.
 - The ground track is drawn in world space, so it stays put in the world while the view moves. Playtest whether it stays readable when you look at the top corners.
-- Optional comfort settings: a lower default FOV for play, and a "view assist" that slowly pulls the camera back to the rest view when no sky notes are near.
+- Comfort settings, on the pause screen until the settings page: the play's own mouse sensitivity (a percentage on top of vanilla's), a FOV used only during play (70 by default, vanilla's own: the screen is 90° wide, so a lower FOV or a narrow window cuts off its sides), and a "view assist" (off by default, strength 1 to 5) that slowly pulls the camera back to the rest view when no sky note is due within 1.5 seconds or can still be judged. The play FOV replaces FOV effects such as sprinting.
 - Fallback if playtests fail: a hybrid where the camera follows a free cursor by only a few degrees. This only touches the input layer, not charts or judgement.
 
 ## Editor

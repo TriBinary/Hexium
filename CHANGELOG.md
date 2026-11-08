@@ -61,6 +61,13 @@
 + Left and right clicks on the stage are now timed from when the button went down and placed where the crosshair meets the sky screen, ready for sky notes.
 + Pausing is fair for sky notes too: a mouse button you changed while paused counts from the moment you paused, and moving the mouse while paused never counts as a swipe through a flick.
 
+#### Settings
+
++ Added comfort settings to the pause screen, kept in `.minecraft/hexium/settings.json`.
+    + Mouse: your mouse sensitivity during play, on top of Minecraft's own, so menus feel the same.
+    + FOV: the field of view during play, 70 by default.
+    + View Assist: slowly brings the camera back to the middle of the sky screen when no sky notes are coming, off by default.
+
 #### Online
 
 + Added replay files, which record every input of a play.

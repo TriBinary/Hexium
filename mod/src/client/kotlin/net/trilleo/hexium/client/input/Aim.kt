@@ -58,6 +58,18 @@ object Aim {
 		player.xRot = pitch
 	}
 
+	/** Turns the camera [share] of the way, 0 to 1, toward looking at a place on the screen. */
+	fun easeToward(screenX: Double, screenY: Double, share: Double) {
+		val minecraft = Minecraft.getInstance()
+		val player = minecraft.player ?: return
+		val level = minecraft.level ?: return
+		val plane = planeFor((level.minY + StageGeometry.FLOOR_THICKNESS).toDouble())
+		plane.lookToward(player.x, player.eyeY, player.z, screenX, screenY)
+		val yaw = player.yRot + Math.IEEEremainder(plane.yaw - player.yRot, 360.0) * share
+		val pitch = player.xRot + (plane.pitch - player.xRot) * share
+		turn(player, yaw.toFloat(), pitch.toFloat())
+	}
+
 	/** Back to mid-screen, for a new play. */
 	fun reset() {
 		x = 0.5f

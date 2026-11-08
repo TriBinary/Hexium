@@ -53,6 +53,7 @@ class HexiumClientGameTest : FabricClientGameTest {
 		aChartPlaysToTheEndAndItsReplayMatches(context)
 		notesDrawWithImprovedTransparency(context)
 		skyNotesDrawAndABotHitsThem(context)
+		comfortSettingsChangeTheCamera(context)
 		calibrationSuggestsAndSavesOffsets(context)
 		normalWorldsAreUntouched(context)
 	}
@@ -415,6 +416,61 @@ class HexiumClientGameTest : FabricClientGameTest {
 		context.runOnClient<RuntimeException> { it.options.improvedTransparency().set(false) }
 	}
 
+	/** On a ground chart, so no sky note is ever near and view assist is free to work. */
+	private fun comfortSettingsChangeTheCamera(context: ClientGameTestContext) {
+		context.clickScreenButton("hexium.title_button")
+		context.waitForScreen(HexiumMenuScreen::class.java)
+		context.clickScreenButton("hexium.difficulty.basic")
+		context.waitFor({ HexiumSession.play()?.state == PlaySession.State.PLAYING }, LOAD_TICKS)
+		check(HexiumSession.play()!!.sky.size == 0) { "view assist needs a chart without sky notes" }
+		try {
+			changeTheCamera(context)
+		} finally {
+			// So a failure doesn't leave these in settings.json for the next run.
+			context.runOnClient<RuntimeException> { PlaySettings.reset() }
+		}
+		context.runOnClient<RuntimeException> { it.pauseGame(false) }
+		context.waitForScreen(StageMenuScreen::class.java)
+		context.clickScreenButton("hexium.stage.leave")
+		context.waitForScreen(HexiumMenuScreen::class.java)
+		context.clickScreenButton("gui.back")
+		context.waitForScreen(TitleScreen::class.java)
+	}
+
+	private fun changeTheCamera(context: ClientGameTestContext) {
+		context.runOnClient<RuntimeException> { PlaySettings.changePlayFov(PLAY_FOV_STEPS) }
+		context.waitTicks(2)
+		context.runOnClient<RuntimeException> {
+			val fov = it.gameRenderer.mainCamera().fov
+			check(fov == PlaySettings.playFov.toFloat() && PlaySettings.playFov != PlayerSettings.DEFAULT_PLAY_FOV) { "the camera's FOV is $fov, not the play's ${PlaySettings.playFov}" }
+		}
+
+		// Vanilla ignores the first movement after grabbing the mouse.
+		context.input.moveCursor(SENSITIVITY_PIXELS, 0.0)
+		context.waitTicks(AIM_TURN_TICKS)
+		val turnAtDefault = turnBy(context, SENSITIVITY_PIXELS)
+		context.runOnClient<RuntimeException> { PlaySettings.changeMouseSensitivity(SENSITIVITY_STEPS) }
+		val turnDoubled = turnBy(context, SENSITIVITY_PIXELS)
+		check(Math.abs(turnDoubled / turnAtDefault - 2.0) < 0.05) { "at double sensitivity the camera turned $turnDoubled, not twice $turnAtDefault" }
+
+		context.runOnClient<RuntimeException> {
+			check(Math.abs(Aim.x - 0.5f) > MIN_AIM_TURN) { "the camera isn't off the middle to test view assist" }
+			PlaySettings.changeViewAssist(PlayerSettings.MAX_VIEW_ASSIST)
+		}
+		context.waitTicks(ASSIST_TICKS)
+		context.runOnClient<RuntimeException> {
+			check(Math.abs(Aim.x - 0.5f) < ASSIST_CLOSE && Math.abs(Aim.y - 0.5f) < ASSIST_CLOSE) { "view assist left the camera at ${Aim.x}, ${Aim.y}" }
+		}
+	}
+
+	/** Moves the mouse and returns how far the camera turned. */
+	private fun turnBy(context: ClientGameTestContext, pixels: Double): Double {
+		val before = context.computeOnClient<Float, RuntimeException> { it.player!!.yRot }
+		context.input.moveCursor(pixels, 0.0)
+		context.waitTicks(AIM_TURN_TICKS)
+		return (context.computeOnClient<Float, RuntimeException> { it.player!!.yRot } - before).toDouble()
+	}
+
 	/** The bot turns the camera onto each of Expert's first sky taps and clicks it, stamped on the note's time. */
 	private fun skyNotesDrawAndABotHitsThem(context: ClientGameTestContext) {
 		context.clickScreenButton("hexium.title_button")
@@ -580,6 +636,15 @@ class HexiumClientGameTest : FabricClientGameTest {
 		const val AIM_TURN_TICKS = 3
 		const val MIN_AIM_TURN = 0.02f
 		const val SKY_TAPS_HIT = 2
+		const val PLAY_FOV_STEPS = 2
+
+		/** About 6 degrees at the default sensitivity, so doubled it stays inside the camera limit. */
+		const val SENSITIVITY_PIXELS = 40.0
+		const val SENSITIVITY_STEPS = 10
+
+		/** Two seconds at full view assist leaves about 2% of the way. */
+		const val ASSIST_TICKS = 40
+		const val ASSIST_CLOSE = 0.03f
 		const val SKY_NOTES_IN_VIEW_BEFORE_MS = 600.0
 		const val SETTLE_MS = 300.0
 		const val TAP_LENGTH_MS = 30.0

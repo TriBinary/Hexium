@@ -64,6 +64,9 @@ class PlaySession private constructor(
 	private var frameMs = 0.0
 	private var framePending = false
 
+	/** The song time view assist last eased the camera at. */
+	private var assistedAtMs = Double.NaN
+
 	/** SDL's tick counter at the start of the frame, so a key's stamp age doesn't count vanilla's work since. */
 	private var frameStartNs = 0L
 
@@ -124,6 +127,7 @@ class PlaySession private constructor(
 				drainInput()
 				clock.pause()
 				input.pause(clock.songTimeMs)
+				assistedAtMs = Double.NaN
 				state = State.PAUSED
 			}
 			State.PAUSED -> if (!screenOpen) {
@@ -151,6 +155,12 @@ class PlaySession private constructor(
 	 */
 	fun afterMouse() {
 		if (state == State.WAITING_FOR_STAGE || state == State.FINISHED) return
+		if (framePending && state != State.PAUSED) {
+			// Song time, so it stops with the song. After a pause or the rewind it's NaN or goes back, and does nothing.
+			val elapsed = frameMs - assistedAtMs
+			if (elapsed.isFinite()) Comfort.assist(this, frameMs, elapsed)
+			assistedAtMs = frameMs
+		}
 		Aim.update()
 		drainInput()
 		if (!framePending) return

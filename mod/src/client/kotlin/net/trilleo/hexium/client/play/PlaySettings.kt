@@ -14,6 +14,8 @@ object PlaySettings {
 	private val LOGGER = LoggerFactory.getLogger(Hexium.MOD_ID)
 	private const val NOTE_SPEED_STEP = 5
 	private const val OFFSET_STEP_MS = 5
+	private const val SENSITIVITY_STEP = 10
+	private const val FOV_STEP = 5
 
 	private var settings = PlayerSettings()
 
@@ -29,6 +31,18 @@ object PlaySettings {
 	val judgementOffsetMs: Int
 		get() = settings.judgementOffsetMs
 
+	/** Percent of vanilla's mouse sensitivity, during a play only. */
+	val mouseSensitivity: Int
+		get() = settings.mouseSensitivity
+
+	/** The field of view on the stage, in degrees. */
+	val playFov: Int
+		get() = settings.playFov
+
+	/** How strongly the camera eases back to the rest view when no sky notes are near, 0 for off. */
+	val viewAssist: Int
+		get() = settings.viewAssist
+
 	/** Call once at startup. A file that can't be read leaves the defaults, and is replaced on the next change. */
 	fun load() {
 		val file = file()
@@ -41,6 +55,12 @@ object PlaySettings {
 	}
 
 	fun changeNoteSpeed(steps: Int) = set(settings.copy(noteSpeed = settings.noteSpeed + steps * NOTE_SPEED_STEP))
+
+	fun changeMouseSensitivity(steps: Int) = set(settings.copy(mouseSensitivity = settings.mouseSensitivity + steps * SENSITIVITY_STEP))
+
+	fun changePlayFov(steps: Int) = set(settings.copy(playFov = settings.playFov + steps * FOV_STEP))
+
+	fun changeViewAssist(steps: Int) = set(settings.copy(viewAssist = settings.viewAssist + steps))
 
 	fun changeVisualOffset(steps: Int) = setOffsets(settings.visualOffsetMs + steps * OFFSET_STEP_MS, settings.judgementOffsetMs)
 
