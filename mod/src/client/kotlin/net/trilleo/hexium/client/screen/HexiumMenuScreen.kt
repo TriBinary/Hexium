@@ -126,9 +126,7 @@ class HexiumMenuScreen(private val lastScreen: Screen) : Screen(TITLE) {
 
 	private fun difficultyButton(pack: ChartPack, chart: DifficultyChart): Button {
 		val difficulty = Component.translatable("hexium.difficulty.${chart.difficulty.name.lowercase()}")
-		val button = Button.builder(difficulty) { play(pack, chart) }.width(DIFFICULTY_WIDTH)
-		if (!chart.isGroundOnly) button.tooltip(Tooltip.create(Component.translatable("hexium.menu.sky_notes")))
-		return button.build().also { it.active = chart.isGroundOnly }
+		return Button.builder(difficulty) { play(pack, chart) }.width(DIFFICULTY_WIDTH).build()
 	}
 
 	override fun onClose() {

@@ -18,6 +18,7 @@ import net.trilleo.hexium.client.input.LaneInput
 import net.trilleo.hexium.client.input.SkyInput
 import net.trilleo.hexium.client.play.PlayHud
 import net.trilleo.hexium.client.play.PlaySettings
+import net.trilleo.hexium.client.play.SkyRenderer
 import net.trilleo.hexium.client.play.TrackRenderer
 import net.trilleo.hexium.client.play.PlaySession
 import net.trilleo.hexium.client.screen.CalibrationScreen
@@ -28,9 +29,11 @@ import net.trilleo.hexium.client.session.HexiumSession
 import net.trilleo.hexium.client.session.StageGeometry
 import net.trilleo.hexium.core.chart.Note
 import net.trilleo.hexium.core.chart.SkyButton
+import net.trilleo.hexium.core.chart.SkyTrack
 import net.trilleo.hexium.core.chart.TimingMap
 import net.trilleo.hexium.core.judge.ClearLamp
 import net.trilleo.hexium.core.judge.Judgement
+import net.trilleo.hexium.core.judge.JudgementConfig
 import net.trilleo.hexium.core.replay.ReplayFile
 import net.trilleo.hexium.core.replay.ReplayEvent
 import net.trilleo.hexium.core.replay.ReplayJudge
@@ -49,6 +52,7 @@ class HexiumClientGameTest : FabricClientGameTest {
 		theStageLocksThePlayerAndLeavesCleanly(context)
 		aChartPlaysToTheEndAndItsReplayMatches(context)
 		notesDrawWithImprovedTransparency(context)
+		skyNotesDrawAndABotHitsThem(context)
 		calibrationSuggestsAndSavesOffsets(context)
 		normalWorldsAreUntouched(context)
 	}
@@ -176,7 +180,8 @@ class HexiumClientGameTest : FabricClientGameTest {
 			check(player.y == standY.toDouble()) { "not on the platform: y ${player.y}" }
 			check(player.onGround()) { "standing on nothing" }
 			val floorY = minecraft.level!!.minY + StageGeometry.FLOOR_THICKNESS
-			val toMiddleOfScreen = Math.toDegrees(Math.atan((player.eyeY - floorY - SCREEN_MIDDLE_HEIGHT) / (StageGeometry.JUDGEMENT_Z - player.z)))
+			check(Math.abs(player.eyeY - floorY - StageGeometry.EYE_HEIGHT) < 1e-9) { "the eyes are ${player.eyeY - floorY} above the floor, not ${StageGeometry.EYE_HEIGHT}" }
+			val toMiddleOfScreen = Math.toDegrees(Math.atan((player.eyeY - floorY - StageGeometry.SCREEN_HEIGHT / 2.0) / (StageGeometry.JUDGEMENT_Z - player.z)))
 			check(Math.abs(toMiddleOfScreen - StageGeometry.REST_PITCH) < MAX_PITCH_ERROR) { "the rest view isn't on the screen's middle, which is $toMiddleOfScreen down" }
 			val reach = StageGeometry.PLATFORM_REACH
 			check(!minecraft.level!!.getBlockState(BlockPos(reach, floorY, reach)).isAir) { "the platform has no corner" }
@@ -229,7 +234,9 @@ class HexiumClientGameTest : FabricClientGameTest {
 		context.runOnClient<RuntimeException> {
 			val edgeX = 1.0 + StageGeometry.AIM_MARGIN / StageGeometry.SCREEN_WIDTH
 			val edgeY = 1.0 + StageGeometry.AIM_MARGIN / StageGeometry.SCREEN_HEIGHT
-			check(StageGeometry.SCREEN_WIDTH == StageGeometry.LANE_WIDTH * 4 && StageGeometry.SCREEN_HEIGHT == 6.0) { "the sky screen isn't 12 by 6" }
+			check(StageGeometry.SCREEN_WIDTH == StageGeometry.LANE_WIDTH * 4 && StageGeometry.SCREEN_WIDTH == StageGeometry.SCREEN_HEIGHT * JudgementConfig.DEFAULT.screenAspect) {
+				"the sky screen isn't as wide as the track at the judge's aspect"
+			}
 			check(Math.abs(Aim.x - edgeX) < MAX_AIM_ERROR && Math.abs(Aim.y - edgeY) < MAX_AIM_ERROR) { "the camera stopped at ${Aim.x}, ${Aim.y}" }
 		}
 		swing(context, -SWING_STEP_PIXELS, SWING_STEP_PIXELS)
@@ -408,6 +415,53 @@ class HexiumClientGameTest : FabricClientGameTest {
 		context.runOnClient<RuntimeException> { it.options.improvedTransparency().set(false) }
 	}
 
+	/** The bot turns the camera onto each of Expert's first sky taps and clicks it, stamped on the note's time. */
+	private fun skyNotesDrawAndABotHitsThem(context: ClientGameTestContext) {
+		context.clickScreenButton("hexium.title_button")
+		context.waitForScreen(HexiumMenuScreen::class.java)
+		context.clickScreenButton("hexium.difficulty.expert")
+		context.waitFor({ HexiumSession.play()?.state == PlaySession.State.PLAYING }, LOAD_TICKS)
+		val play = HexiumSession.play()!!
+		val sky = play.sky
+		check(sky.kind(0) == SkyTrack.Kind.TAP && sky.kind(1) == SkyTrack.Kind.TAP) { "Expert doesn't open with two sky taps" }
+		context.waitFor({ play.clock.songTimeMs >= sky.startMs(0) - SKY_NOTES_IN_VIEW_BEFORE_MS }, SONG_TICKS)
+		context.takeScreenshot("sky_notes")
+		context.runOnClient<RuntimeException> { check(SkyRenderer.notesDrawn > 0) { "no sky notes drawn on the way to the first one" } }
+
+		var next = 0
+		val bot = { song: Double ->
+			// One a tick: a click takes the crosshair's place when it's read, so the next note's turn must wait.
+			if (next < SKY_TAPS_HIT && sky.startMs(next) <= song + BOT_LOOKAHEAD_MS) {
+				val start = sky.startMs(next)
+				Aim.lookToward(sky.x(next, start), sky.y(next, start))
+				val nowNs = SDLTimer.SDL_GetTicksNS()
+				val aheadNs = ((start - play.clock.songTimeAt(nowNs)) * NANOS_PER_MS).toLong()
+				SkyInput.push(sky.button(next)!!, true, nowNs + aheadNs)
+				SkyInput.push(sky.button(next)!!, false, nowNs + aheadNs + (TAP_LENGTH_MS * NANOS_PER_MS).toLong())
+				next++
+			}
+		}
+		context.waitFor({
+			bot(play.clock.songTimeMs)
+			play.clock.songTimeMs >= sky.startMs(SKY_TAPS_HIT - 1) + SETTLE_MS
+		}, SONG_TICKS)
+		context.runOnClient<RuntimeException> {
+			val judge = play.judge
+			for (n in 0 until SKY_TAPS_HIT) {
+				val found = (0 until judge.judgedCount).firstOrNull { judge.judgedNote(it) == sky.chartNote(n) } ?: error("sky tap $n wasn't judged")
+				check(judge.judgement(found) == Judgement.JUSTICE_CRITICAL && Math.abs(judge.judgedDeltaMs(found)) < MAX_BOT_ERROR_MS) {
+					"sky tap $n was ${judge.judgement(found)}, ${judge.judgedDeltaMs(found)} ms off"
+				}
+			}
+			it.pauseGame(false)
+		}
+		context.waitForScreen(StageMenuScreen::class.java)
+		context.clickScreenButton("hexium.stage.leave")
+		context.waitForScreen(HexiumMenuScreen::class.java)
+		context.clickScreenButton("gui.back")
+		context.waitForScreen(TitleScreen::class.java)
+	}
+
 	private fun pauseAndCheckTimeStops(context: ClientGameTestContext, play: PlaySession, screenshot: String) {
 		context.runOnClient<RuntimeException> { it.pauseGame(false) }
 		context.waitForScreen(StageMenuScreen::class.java)
@@ -525,6 +579,9 @@ class HexiumClientGameTest : FabricClientGameTest {
 		const val AIM_TURN_PIXELS = 20.0
 		const val AIM_TURN_TICKS = 3
 		const val MIN_AIM_TURN = 0.02f
+		const val SKY_TAPS_HIT = 2
+		const val SKY_NOTES_IN_VIEW_BEFORE_MS = 600.0
+		const val SETTLE_MS = 300.0
 		const val TAP_LENGTH_MS = 30.0
 		const val SONG_TICKS = 1200
 		const val BOT_LOOKAHEAD_MS = 120.0
@@ -548,7 +605,6 @@ class HexiumClientGameTest : FabricClientGameTest {
 		const val TAP_BEFORE_PAUSE_LANE = 3
 		const val MIN_REWIND_MS = 2000.0
 
-		const val SCREEN_MIDDLE_HEIGHT = 3.0
 		const val MAX_PITCH_ERROR = 0.1
 
 		const val VISUAL_OFFSET_STEPS = 10

@@ -26,13 +26,15 @@ object TrackRenderer {
 	private const val FLOOR_LIFT = 0.01
 	private const val LINE_LIFT = 0.02
 	private const val BODY_LIFT = 0.04
-	private const val DIVIDER_WIDTH = 0.06
-	private const val LINE_DEPTH = 0.3
-	private const val NOTE_WIDTH = 2.6
-	private const val NOTE_DEPTH = 0.8
-	private const val NOTE_HEIGHT = 0.4
-	private const val BODY_WIDTH = 2.0
-	private const val GLOW_LENGTH = 16.0
+
+	// Sizes grow with the stage, so notes keep their shape in a lane.
+	private val DIVIDER_WIDTH = 0.06 * StageGeometry.SCALE
+	private val LINE_DEPTH = 0.3 * StageGeometry.SCALE
+	private val NOTE_WIDTH = 2.6 * StageGeometry.SCALE
+	private val NOTE_DEPTH = 0.8 * StageGeometry.SCALE
+	private val NOTE_HEIGHT = 0.4 * StageGeometry.SCALE
+	private val BODY_WIDTH = 2.0 * StageGeometry.SCALE
+	private val GLOW_LENGTH = 16.0 * StageGeometry.SCALE
 
 	/** The last stretch of the track, where notes fade in instead of popping up. */
 	private const val FADE_LENGTH = 10.0

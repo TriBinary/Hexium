@@ -69,7 +69,7 @@ Difficulties are `BASIC`, `ADVANCED`, `EXPERT` and `MASTER`.
 
 `dir` on a flick is optional, in degrees (0 = right, 90 = up). Leave it out to accept any direction. Difficulties BASIC and ADVANCED use the easy tap windows. `level` is a whole number.
 
-`button` is required on sky taps and slides, and is `L` or `R`. Every other field in the example is required. `size` is a multiplier on the base hit area in `JudgementConfig`, so 1 is normal. `radius` is a fraction of the screen's height, so a slide's hit area is a circle: on a 6-block-tall screen, a `radius` of 0.06 is 0.36 blocks in every direction.
+`button` is required on sky taps and slides, and is `L` or `R`. Every other field in the example is required. `size` is a multiplier on the base hit area in `JudgementConfig`, so 1 is normal. `radius` is a fraction of the screen's height, so a slide's hit area is a circle: on the 9.24-block-tall screen, a `radius` of 0.06 is about 0.55 blocks in every direction.
 
 `ease` is `linear`, `in`, `out` or `inOut`. It shapes the segment leaving that point, so the last point's `ease` is ignored (but still required). With `t` as the progress along the segment from 0 to 1, measured in beats so a BPM change doesn't bend the path, the position moves by `t` for `linear`, `t²` for `in`, `1 − (1 − t)²` for `out` and `3t² − 2t³` for `inOut`.
 

@@ -3,7 +3,6 @@
   "hexium.menu.title": "Hexium",
   "hexium.menu.no_charts": "No charts found. Put chart folders in .minecraft/hexium/charts.",
   "hexium.menu.broken": "Broken",
-  "hexium.menu.sky_notes": "This chart has sky notes, which can't be played yet.",
   "hexium.difficulty.basic": "Basic",
   "hexium.difficulty.advanced": "Advanced",
   "hexium.difficulty.expert": "Expert",

@@ -9,7 +9,6 @@
 + Added a Hexium button on the title screen that opens Hexium's menu.
     + The menu lists every chart it finds, including a built-in Test Pattern and any folders in `.minecraft/hexium/charts`.
     + Broken charts are marked and show their first problem, and the full list goes to the log.
-    + Charts with sky notes are shown but can't be selected yet.
 + Choosing a difficulty now plays it on the stage, and Esc offers a way back to the menu.
 
 #### Charts
@@ -42,9 +41,9 @@
     + Tap to clicks with your eyes closed, then to moving notes with no sound, and it suggests a judgement offset and a visual offset that you can adjust before saving.
 + Your note speed and offsets are now remembered, in `.minecraft/hexium/settings.json`.
 + Added the stage: a plain floor with a raised platform you stand on, looking down the lanes, kept apart from your normal worlds.
-    + You stand 6 blocks from the judgement line, so it's close enough to read.
+    + You stand 9 blocks from the judgement line, with a sky screen 18 blocks wide and 9 tall whose middle is level with your eyes.
     + You can look around, but moving, jumping and action keys are off while you're on it.
-    + The camera stops a block past the sky screen's edges, so you can't turn away from the stage.
+    + The camera stops just past the sky screen's edges, so you can't turn away from the stage.
     + The hunger bar is hidden.
 + Added judging for ground taps and holds, with CHUNITHM's windows.
     + Hold ticks are judged on how long ago the key was last down.
@@ -52,6 +51,11 @@
 
 #### Sky Notes
 
++ Sky notes can now be played on the screen in front of you: aim with the camera and click.
+    + Sky taps fly toward the screen and are hit with a left click (orange) or a right click (blue).
+    + Slides are a trail of beads to follow with the button held, with a ring where the slide crosses the screen, white while you hold the button.
+    + Flicks are magenta, with an arrow when they need a direction: swipe through them.
+    + A faint ring on the screen shows where a coming note will land.
 + Added judging for sky taps, slides and flicks.
     + A swipe that jumps over a flick between two frames still hits it, so low frame rates stay fair.
 + Left and right clicks on the stage are now timed from when the button went down and placed where the crosshair meets the sky screen, ready for sky notes.

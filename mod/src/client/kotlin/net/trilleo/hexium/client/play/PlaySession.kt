@@ -23,6 +23,7 @@ import net.trilleo.hexium.core.chart.DifficultyChart
 import net.trilleo.hexium.core.chart.GroundTrack
 import net.trilleo.hexium.core.chart.Severity
 import net.trilleo.hexium.core.chart.SkyButton
+import net.trilleo.hexium.core.chart.SkyTrack
 import net.trilleo.hexium.core.judge.Judge
 import net.trilleo.hexium.core.judge.JudgeChart
 import net.trilleo.hexium.core.replay.PlayInput
@@ -53,6 +54,7 @@ class PlaySession private constructor(
 	val judgementOffsetMs = PlaySettings.judgementOffsetMs.toDouble()
 	val recorder = ReplayRecorder(judgeChart, Replay.hashOf(chartFile), judgementOffsetMs, expectedEvents())
 	val track = GroundTrack(chart)
+	val sky = SkyTrack(chart, judgeChart.config)
 	private val endMs = chart.lastNoteEndMs() + TAIL_MS
 	private val headJudged = BooleanArray(chart.notes.size)
 	private var judgedSeen = 0
@@ -89,7 +91,7 @@ class PlaySession private constructor(
 	val notesMoving: Boolean
 		get() = state != State.WAITING_FOR_STAGE
 
-	/** True once a tap or hold head, by its index in the chart's notes, has been judged. A hold's ticks don't count. */
+	/** True once a tap, hold head, sky tap or flick, by its index in the chart's notes, has been judged. Ticks don't count. */
 	fun isHeadJudged(chartNote: Int): Boolean = headJudged[chartNote]
 
 	fun isLaneDown(lane: Int): Boolean = acceptingInput && input.isLaneDown(lane)

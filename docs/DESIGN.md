@@ -34,11 +34,11 @@ Everything is judged on one plane: the transparent screen in front of the player
 ### Stage geometry (starting values, all tunable)
 
 - The player is locked on the stand spot (the red circle), on a platform 3 blocks above the floor so the lanes stay readable into the distance, in adventure mode. Movement, jumping, sneaking, hotbar and inventory keys are suppressed during play. The hunger bar is hidden.
-- Screen plane: 6 blocks in front of the player's eyes, about 12 blocks wide and 6 tall, with its bottom edge on the floor, so the player's eyes are level with its upper half and the rest view looks slightly down.
-- Ground lanes: 4 lanes, each 3 blocks wide so the track matches the screen's width, lie on the floor, starting just in front of the platform and running past the screen, 64 blocks beyond it, into the distance. Notes spawn far down the lanes and slide toward the bottom edge of the screen.
+- Screen plane: twice as tall as the player's eyes are high (eyes 4.62 blocks above the floor, so 9.24 tall), 18.48 wide at the judge's 2:1 aspect, with its bottom edge on the floor, so the player's eyes are level with its middle and the rest view looks straight ahead. It stands as far in front of the player as it is tall, 9.24 blocks, so its sides are 45° either side of straight ahead and its top and bottom 26.6° up and down.
+- Ground lanes: 4 lanes, each 4.62 blocks wide so the track matches the screen's width, lie on the floor, starting just in front of the platform and running past the screen, 64 blocks beyond it, into the distance. Notes spawn far down the lanes and slide toward the bottom edge of the screen.
 - Sky notes: they fly straight toward the screen along the depth axis, visible through it, and are judged when they reach their (x, y) spot on the screen.
 - Note speed ("HiSpeed") is a player setting in blocks per second, 25 by default. It changes how far away notes appear, never their timing.
-- Rest view: centred on the screen with the judgement line and the track ahead of it fully visible. Yaw and pitch are clamped to the screen's edges plus a small margin, so the player can't spin away.
+- Rest view: centred on the screen with the judgement line and the track ahead of it fully visible. Yaw and pitch are clamped to the screen's edges plus a small margin (1.54 blocks), so the player can't spin away.
 
 ### Note types
 

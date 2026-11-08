@@ -1,6 +1,7 @@
 package net.trilleo.hexium.client.input
 
 import net.minecraft.client.Minecraft
+import net.minecraft.client.player.LocalPlayer
 import net.trilleo.hexium.client.session.StageGeometry
 import net.trilleo.hexium.core.aim.ScreenPlane
 
@@ -30,18 +31,31 @@ object Aim {
 		val yaw = player.yRot
 		val pitch = player.xRot
 		if (plane.clampLook(player.x, player.eyeY, player.z, yaw.toDouble(), pitch.toDouble(), StageGeometry.AIM_MARGIN / StageGeometry.SCREEN_WIDTH, StageGeometry.AIM_MARGIN / StageGeometry.SCREEN_HEIGHT)) {
-			val newYaw = plane.yaw.toFloat()
-			val newPitch = plane.pitch.toFloat()
-			// The previous frame's look moves by as much, so the camera doesn't swing back between ticks.
-			player.yRotO += newYaw - yaw
-			player.xRotO += newPitch - pitch
-			player.yRot = newYaw
-			player.xRot = newPitch
+			turn(player, plane.yaw.toFloat(), plane.pitch.toFloat())
 		}
 		if (plane.aim(player.x, player.eyeY, player.z, player.yRot.toDouble(), player.xRot.toDouble())) {
 			x = plane.x.toFloat()
 			y = plane.y.toFloat()
 		}
+	}
+
+	/** Turns the camera to look at a place on the screen, given as the chart's screen coordinates. */
+	fun lookToward(screenX: Double, screenY: Double) {
+		val minecraft = Minecraft.getInstance()
+		val player = minecraft.player ?: return
+		val level = minecraft.level ?: return
+		val plane = planeFor((level.minY + StageGeometry.FLOOR_THICKNESS).toDouble())
+		plane.lookToward(player.x, player.eyeY, player.z, screenX, screenY)
+		// On the camera's own whole turn, as the limit keeps it.
+		turn(player, (player.yRot + Math.IEEEremainder(plane.yaw - player.yRot, 360.0)).toFloat(), plane.pitch.toFloat())
+	}
+
+	/** The previous frame's look moves by as much, so the camera doesn't swing back between ticks. */
+	private fun turn(player: LocalPlayer, yaw: Float, pitch: Float) {
+		player.yRotO += yaw - player.yRot
+		player.xRotO += pitch - player.xRot
+		player.yRot = yaw
+		player.xRot = pitch
 	}
 
 	/** Back to mid-screen, for a new play. */
