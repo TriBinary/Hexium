@@ -2,8 +2,8 @@
 
 Hexium is a Fabric rhythm game mod for Minecraft 26.3 (Kotlin, Java 25): a 4-lane keyboard
 track plus a mouse-aimed sky screen, with an in-game editor and online charts.
-It is client-only. Milestone 2 (ground prototype) has passed its gate, so the project is at
-Milestone 3 (sky layer); see the roadmap in docs/DESIGN.md.
+It is client-only. Milestone 3 (sky layer) has passed its gate, so the project is at
+Milestone 4 (content loop); see the roadmap in docs/DESIGN.md.
 
 ## Working with me
 - Before any non-trivial task, ask clarifying questions about the idea and design

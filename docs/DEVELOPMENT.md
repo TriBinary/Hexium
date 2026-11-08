@@ -95,7 +95,9 @@ Real keys go through SDL, which the game tests can't reach, so this needs a pers
 
 ### Milestone 3 gate
 
-Decided on 2026-11-08: keep real camera rotation; the hybrid fallback in docs/DESIGN.md (the camera follows a free cursor by only a few degrees) isn't built. Also decided on 2026-11-08: flicks hit from any direction, and `dir` is removed from the chart format. The results of the other steps aren't recorded yet.
+Passed on macOS on 2026-11-08. Steps 2 and 4 haven't been run on Windows yet. Step 9 is still open: the Expert play recorded that day was made before flicks lost their direction, so it no longer matches the chart's bytes, and a new one needs recording before it can go in `golden/recorded`.
+
+Decided on 2026-11-08: keep real camera rotation; the hybrid fallback in docs/DESIGN.md (the camera follows a free cursor by only a few degrees) isn't built. Also decided on 2026-11-08: flicks hit from any direction, and `dir` is removed from the chart format.
 
 Real clicks go through SDL, which the game tests can't reach, so this needs a person. Play **Test Pattern → Expert**, which has sky notes in every corner mixed with ground notes, with F6 on. Use the default settings first (Mouse 100%, FOV 70, View Assist off), in a 16:9 window. Times below are song times, the `song` line in F6, which starts 3 seconds after you press play. Note anything that feels unfair: flick feedback goes into the last Milestone 3 task, which tunes the flick's minimum speed, hit radius and speed check.
 
