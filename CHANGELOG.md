@@ -44,6 +44,7 @@
 + Added the stage: a plain floor with a raised platform you stand on, looking down the lanes, kept apart from your normal worlds.
     + You stand 6 blocks from the judgement line, so it's close enough to read.
     + You can look around, but moving, jumping and action keys are off while you're on it.
+    + The camera stops a block past the sky screen's edges, so you can't turn away from the stage.
     + The hunger bar is hidden.
 + Added judging for ground taps and holds, with CHUNITHM's windows.
     + Hold ticks are judged on how long ago the key was last down.
@@ -53,6 +54,7 @@
 
 + Added judging for sky taps, slides and flicks.
     + A swipe that jumps over a flick between two frames still hits it, so low frame rates stay fair.
++ Left and right clicks on the stage are now timed from when the button went down and placed where the crosshair meets the sky screen, ready for sky notes.
 + Pausing is fair for sky notes too: a mouse button you changed while paused counts from the moment you paused, and moving the mouse while paused never counts as a swipe through a flick.
 
 #### Online

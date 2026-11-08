@@ -13,7 +13,9 @@ import net.minecraft.sounds.SoundSource
 import net.minecraft.world.Difficulty
 import net.minecraft.world.level.GameType
 import net.minecraft.world.level.gamerules.GameRules
+import net.trilleo.hexium.client.input.Aim
 import net.trilleo.hexium.client.input.LaneInput
+import net.trilleo.hexium.client.input.SkyInput
 import net.trilleo.hexium.client.play.PlayHud
 import net.trilleo.hexium.client.play.PlaySettings
 import net.trilleo.hexium.client.play.TrackRenderer
@@ -25,6 +27,7 @@ import net.trilleo.hexium.client.screen.StageMenuScreen
 import net.trilleo.hexium.client.session.HexiumSession
 import net.trilleo.hexium.client.session.StageGeometry
 import net.trilleo.hexium.core.chart.Note
+import net.trilleo.hexium.core.chart.SkyButton
 import net.trilleo.hexium.core.chart.TimingMap
 import net.trilleo.hexium.core.judge.ClearLamp
 import net.trilleo.hexium.core.judge.Judgement
@@ -220,6 +223,22 @@ class HexiumClientGameTest : FabricClientGameTest {
 		context.waitTicks(SETTLE_TICKS)
 		check(context.computeOnClient<Float, RuntimeException> { it.player!!.yRot } != yawBefore) { "the camera didn't turn" }
 
+		// A big swing, a frame at a time as a real mouse moves, stops at the sky screen's edge plus the margin.
+		swing(context, SWING_STEP_PIXELS, -SWING_STEP_PIXELS)
+		context.takeScreenshot("camera_limit")
+		context.runOnClient<RuntimeException> {
+			val edgeX = 1.0 + StageGeometry.AIM_MARGIN / StageGeometry.SCREEN_WIDTH
+			val edgeY = 1.0 + StageGeometry.AIM_MARGIN / StageGeometry.SCREEN_HEIGHT
+			check(StageGeometry.SCREEN_WIDTH == StageGeometry.LANE_WIDTH * 4 && StageGeometry.SCREEN_HEIGHT == 6.0) { "the sky screen isn't 12 by 6" }
+			check(Math.abs(Aim.x - edgeX) < MAX_AIM_ERROR && Math.abs(Aim.y - edgeY) < MAX_AIM_ERROR) { "the camera stopped at ${Aim.x}, ${Aim.y}" }
+		}
+		swing(context, -SWING_STEP_PIXELS, SWING_STEP_PIXELS)
+		context.runOnClient<RuntimeException> {
+			val edgeX = -StageGeometry.AIM_MARGIN / StageGeometry.SCREEN_WIDTH
+			val edgeY = -StageGeometry.AIM_MARGIN / StageGeometry.SCREEN_HEIGHT
+			check(Math.abs(Aim.x - edgeX) < MAX_AIM_ERROR && Math.abs(Aim.y - edgeY) < MAX_AIM_ERROR) { "the camera stopped at ${Aim.x}, ${Aim.y}" }
+		}
+
 		context.runOnClient<RuntimeException> { it.pauseGame(false) }
 		context.waitForScreen(StageMenuScreen::class.java)
 		context.takeScreenshot("stage_menu")
@@ -239,17 +258,34 @@ class HexiumClientGameTest : FabricClientGameTest {
 		context.waitForScreen(TitleScreen::class.java)
 	}
 
+	private fun swing(context: ClientGameTestContext, stepX: Double, stepY: Double) {
+		repeat(SWING_STEPS) {
+			context.input.moveCursor(stepX, stepY)
+			context.waitTick()
+		}
+		context.waitTicks(SETTLE_TICKS)
+	}
+
 	private fun aChartPlaysToTheEndAndItsReplayMatches(context: ClientGameTestContext) {
 		context.clickScreenButton("hexium.title_button")
 		context.waitForScreen(HexiumMenuScreen::class.java)
 		context.clickScreenButton("hexium.difficulty.basic")
 		context.waitFor({ HexiumSession.play()?.state == PlaySession.State.PLAYING }, LOAD_TICKS)
 		val play = HexiumSession.play()!!
-		// A tap in the same frame as the pause came before it, so it must not be lost.
+		// Off the middle, so a click's place shows it comes from the camera. Vanilla ignores the first move after grabbing the mouse.
+		context.input.moveCursor(AIM_TURN_PIXELS, AIM_TURN_PIXELS)
+		context.waitTicks(AIM_TURN_TICKS)
+		context.input.moveCursor(AIM_TURN_PIXELS, AIM_TURN_PIXELS)
+		context.waitTicks(AIM_TURN_TICKS)
+		val aimed = context.computeOnClient<Pair<Float, Float>, RuntimeException> { Aim.x to Aim.y }
+		check(Math.abs(aimed.first - 0.5f) > MIN_AIM_TURN && Math.abs(aimed.second - 0.5f) > MIN_AIM_TURN) { "the camera didn't turn off the middle: $aimed" }
+		// A tap and a click pushed between frames, as SDL delivers them, must not be lost to the pause right after.
 		context.runOnClient<RuntimeException> {
 			val now = SDLTimer.SDL_GetTicksNS()
 			LaneInput.push(TAP_BEFORE_PAUSE_LANE, true, now)
 			LaneInput.push(TAP_BEFORE_PAUSE_LANE, false, now)
+			SkyInput.push(SkyButton.R, true, now)
+			SkyInput.push(SkyButton.R, false, now)
 		}
 		pauseAndCheckTimeStops(context, play, "lead_in")
 		context.runOnClient<RuntimeException> {
@@ -257,6 +293,18 @@ class HexiumClientGameTest : FabricClientGameTest {
 			check((0 until replay.eventCount).any { replay.event(it) == ReplayEvent.LANE_DOWN && replay.index(it) == TAP_BEFORE_PAUSE_LANE }) {
 				"a tap just before the pause was lost"
 			}
+			// Pressed where the crosshair was.
+			check(
+				(0 until replay.eventCount).any {
+					replay.event(it) == ReplayEvent.BUTTON_DOWN && replay.index(it) == SkyButton.R.ordinal &&
+						Math.abs(replay.x(it) - aimed.first) < MAX_AIM_ERROR && Math.abs(replay.y(it) - aimed.second) < MAX_AIM_ERROR
+				},
+			) { "a click just before the pause was lost or put in the wrong place" }
+			check(
+				(0 until replay.eventCount).any {
+					replay.event(it) == ReplayEvent.AIM && Math.abs(replay.x(it) - aimed.first) < MAX_AIM_ERROR && Math.abs(replay.y(it) - aimed.second) < MAX_AIM_ERROR
+				},
+			) { "no aim sample where the camera pointed" }
 		}
 
 		val script = script(play)
@@ -467,6 +515,16 @@ class HexiumClientGameTest : FabricClientGameTest {
 		const val SETTLE_TICKS = 20
 		const val HOLD_TICKS = 40
 		const val TURN_PIXELS = 200.0
+
+		/** About 15 degrees a step at the default sensitivity, far enough in all to turn well past every edge. */
+		const val SWING_STEP_PIXELS = 100.0
+		const val SWING_STEPS = 30
+		const val MAX_AIM_ERROR = 0.002
+
+		/** A few degrees right and down at the default sensitivity, a little way into the lead-in. */
+		const val AIM_TURN_PIXELS = 20.0
+		const val AIM_TURN_TICKS = 3
+		const val MIN_AIM_TURN = 0.02f
 		const val TAP_LENGTH_MS = 30.0
 		const val SONG_TICKS = 1200
 		const val BOT_LOOKAHEAD_MS = 120.0

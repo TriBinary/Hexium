@@ -11,7 +11,9 @@ import net.trilleo.hexium.client.chart.ChartPack
 import net.trilleo.hexium.client.clock.AudioClock
 import net.trilleo.hexium.client.debug.DebugOverlay
 import net.trilleo.hexium.client.debug.InputDelay
+import net.trilleo.hexium.client.input.Aim
 import net.trilleo.hexium.client.input.LaneInput
+import net.trilleo.hexium.client.input.SkyInput
 import net.trilleo.hexium.client.screen.ResultsScreen
 import net.trilleo.hexium.core.chart.ChartFolder
 import net.trilleo.hexium.core.chart.ChartParser
@@ -20,6 +22,7 @@ import net.trilleo.hexium.core.chart.Difficulty
 import net.trilleo.hexium.core.chart.DifficultyChart
 import net.trilleo.hexium.core.chart.GroundTrack
 import net.trilleo.hexium.core.chart.Severity
+import net.trilleo.hexium.core.chart.SkyButton
 import net.trilleo.hexium.core.judge.Judge
 import net.trilleo.hexium.core.judge.JudgeChart
 import net.trilleo.hexium.core.replay.PlayInput
@@ -29,9 +32,10 @@ import org.lwjgl.sdl.SDLTimer
 import org.slf4j.LoggerFactory
 
 /**
- * One play of a chart. Each frame it reads the audio clock, then sends everything that happened
- * through [input] and on to [recorder], so a replay holds exactly what the judge saw. All the rules,
- * including what a pause does, are in `core`.
+ * One play of a chart. Each frame it reads the audio clock at the start ([frame]), then, once vanilla
+ * has turned the camera with that frame's mouse movement ([afterMouse]), sends everything that
+ * happened through [input] and on to [recorder], so a replay holds exactly what the judge saw and each
+ * aim sample is where the camera really pointed. All the rules, including what a pause does, are in `core`.
  */
 class PlaySession private constructor(
 	private val pack: ChartPack,
@@ -53,6 +57,13 @@ class PlaySession private constructor(
 	private val headJudged = BooleanArray(chart.notes.size)
 	private var judgedSeen = 0
 	private val input = PlayInput(recorder, chart.laneCount)
+
+	/** The song time [frame] read, waiting for [afterMouse] to send it with the aim. */
+	private var frameMs = 0.0
+	private var framePending = false
+
+	/** SDL's tick counter at the start of the frame, so a key's stamp age doesn't count vanilla's work since. */
+	private var frameStartNs = 0L
 
 	/** Where the replay of this play went, once it has finished, or null if it couldn't be saved. */
 	var savedReplay: Path? = null
@@ -83,6 +94,9 @@ class PlaySession private constructor(
 
 	fun isLaneDown(lane: Int): Boolean = acceptingInput && input.isLaneDown(lane)
 
+	/** For drawing a slide as held. */
+	fun isButtonDown(button: SkyButton): Boolean = acceptingInput && input.isButtonDown(button)
+
 	private fun expectedEvents(): Int {
 		val seconds = (stream.lengthMs + LEAD_IN_MS + TAIL_MS) / 1000.0
 		return (seconds * EXPECTED_SAMPLES_PER_SECOND).toInt() + judgeChart.objectCount * 2
@@ -91,12 +105,15 @@ class PlaySession private constructor(
 	/** Call once per frame, before anything reads the time. Doesn't allocate. */
 	fun frame() {
 		val minecraft = Minecraft.getInstance()
+		frameStartNs = SDLTimer.SDL_GetTicksNS()
 		stream.setGain(minecraft.options.getFinalSoundSourceVolume(SoundSource.MUSIC))
 		val screenOpen = minecraft.gui.screen() != null
 		when (state) {
 			State.WAITING_FOR_STAGE -> {
 				if (screenOpen || minecraft.player == null) return
 				LaneInput.clear()
+				SkyInput.clear()
+				Aim.reset()
 				clock.playAfter(LEAD_IN_MS)
 				state = State.PLAYING
 			}
@@ -114,18 +131,32 @@ class PlaySession private constructor(
 			State.FINISHED -> return
 		}
 		clock.update()
-		drainInput()
 		if (state == State.PAUSED) {
+			// Keys and buttons changed during the pause, read on this clock before resuming moves it.
+			drainInput()
 			readResults()
 			return
 		}
 		// Vanilla lowers the frame rate after a minute with no input it can see, and lane keys never reach it.
 		minecraft.framerateLimitTracker.onInputReceived()
-		val now = clock.songTimeMs
-		input.frame(now, REST_AIM, REST_AIM)
+		frameMs = clock.songTimeMs
+		framePending = true
+	}
+
+	/**
+	 * Call once per frame after vanilla has turned the camera with the mouse. Keeps the camera within its
+	 * limit, then sends that frame's input and aim sample. Doesn't allocate.
+	 */
+	fun afterMouse() {
+		if (state == State.WAITING_FOR_STAGE || state == State.FINISHED) return
+		Aim.update()
+		drainInput()
+		if (!framePending) return
+		framePending = false
+		input.frame(frameMs, Aim.x, Aim.y)
 		if (state == State.REWINDING && input.isOpen) state = State.PLAYING
 		readResults()
-		if (state == State.PLAYING && now >= endMs) finish(minecraft)
+		if (state == State.PLAYING && frameMs >= endMs) finish(Minecraft.getInstance())
 	}
 
 	private fun readResults() {
@@ -135,13 +166,21 @@ class PlaySession private constructor(
 		}
 	}
 
+	/** Keys and mouse buttons, oldest first. A button is pressed where the crosshair is now. */
 	private fun drainInput() {
-		while (LaneInput.hasEvent) {
-			input.lane(LaneInput.lane, LaneInput.down, clock.songTimeAt(LaneInput.timeNs))
+		while (LaneInput.hasEvent || SkyInput.hasEvent) {
+			val laneFirst = LaneInput.hasEvent && (!SkyInput.hasEvent || LaneInput.timeNs <= SkyInput.timeNs)
+			val timeNs = if (laneFirst) LaneInput.timeNs else SkyInput.timeNs
+			if (laneFirst) {
+				input.lane(LaneInput.lane, LaneInput.down, clock.songTimeAt(timeNs))
+				LaneInput.next()
+			} else {
+				input.button(SkyInput.button, SkyInput.down, clock.songTimeAt(timeNs), Aim.x, Aim.y)
+				SkyInput.next()
+			}
 			inputDelay.lateKeys = input.lateKeyCount
 			// Only what reached the judge, so a key changed during a pause isn't counted.
-			if (input.isOpen) inputDelay.record(SDLTimer.SDL_GetTicksNS() - LaneInput.timeNs)
-			LaneInput.next()
+			if (input.isOpen) inputDelay.record(frameStartNs - timeNs)
 		}
 	}
 
@@ -174,9 +213,6 @@ class PlaySession private constructor(
 
 		/** Room for this frame rate without growing during play, on top of the notes' own presses. */
 		private const val EXPECTED_SAMPLES_PER_SECOND = 2000
-
-		/** Aiming arrives with sky notes. Until then the crosshair stays mid-screen, on the same code path. */
-		private const val REST_AIM = 0.5f
 
 		/** Reads the chart's own bytes, since a replay is tied to them. Throws [IOException] saying what's wrong. */
 		fun load(pack: ChartPack, difficulty: Difficulty): PlaySession {

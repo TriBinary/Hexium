@@ -5,6 +5,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.components.toasts.SystemToast
 import net.minecraft.network.chat.Component
 import net.trilleo.hexium.Hexium
+import net.trilleo.hexium.client.input.SkyInput
 import net.trilleo.hexium.client.play.PlaySession
 import net.trilleo.hexium.client.screen.StageMenuScreen
 import org.slf4j.LoggerFactory
@@ -25,6 +26,7 @@ object HexiumSession {
 	fun active(): Boolean = active
 
 	fun start(play: PlaySession? = null) {
+		SkyInput.forgetPresses()
 		active = true
 		this.play = play
 	}
@@ -37,6 +39,12 @@ object HexiumSession {
 	@JvmStatic
 	fun frame() {
 		play?.frame()
+	}
+
+	/** Called every frame once vanilla has turned the camera with the mouse, before anything is drawn. */
+	@JvmStatic
+	fun afterMouse() {
+		play?.afterMouse()
 	}
 
 	/** Starts the chart again on the stage that's already here. If it can't be read, the player stays where they are. */

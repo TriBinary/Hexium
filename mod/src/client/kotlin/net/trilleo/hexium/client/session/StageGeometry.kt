@@ -1,5 +1,7 @@
 package net.trilleo.hexium.client.session
 
+import net.trilleo.hexium.core.judge.JudgementConfig
+
 /** Where things stand on the stage. Starting values from docs/DESIGN.md, all tunable. */
 object StageGeometry {
 	const val FLOOR_THICKNESS = 1
@@ -23,8 +25,17 @@ object StageGeometry {
 	/** Where the screen's bottom edge is, 6 blocks in front of the player. */
 	const val JUDGEMENT_Z = STAND_Z + 6.0
 
-	/** Four of these make the track as wide as the sky screen will be, 12 blocks. */
+	/** Four of these make the track as wide as the sky screen, 12 blocks. */
 	const val LANE_WIDTH = 3.0
+
+	/** The sky screen stands on the floor at the judgement line, as wide as the track, 12 blocks. */
+	const val SCREEN_WIDTH = LANE_WIDTH * 4
+
+	/** 6 blocks, from the judge's own aspect, so hit circles stay round on the screen. */
+	val SCREEN_HEIGHT = SCREEN_WIDTH / JudgementConfig.DEFAULT.screenAspect
+
+	/** How far past the screen's edges, in blocks, the camera can look before it stops. */
+	const val AIM_MARGIN = 1.0
 
 	/** How far up the lanes the track runs from the judgement line. Notes appear at the far end. */
 	const val TRACK_LENGTH = 64.0

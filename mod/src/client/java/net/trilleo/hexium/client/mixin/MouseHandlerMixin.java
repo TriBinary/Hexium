@@ -7,9 +7,16 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** The wheel changes the hotbar slot directly. Screens still get it. */
 @Mixin(MouseHandler.class)
 abstract class MouseHandlerMixin {
+	/** The camera has just turned with this frame's mouse movement, and nothing has drawn it yet. */
+	@Inject(method = "handleAccumulatedMovement", at = @At("TAIL"))
+	private void hexium$afterMouse(CallbackInfo ci) {
+		if (!HexiumSession.active()) return;
+		HexiumSession.afterMouse();
+	}
+
+	/** The wheel changes the hotbar slot directly. Screens still get it. */
 	@Inject(method = "onScroll", at = @At("HEAD"), cancellable = true)
 	private void hexium$noHotbarScroll(long handle, double xoffset, double yoffset, CallbackInfo ci) {
 		if (!HexiumSession.active()) return;
