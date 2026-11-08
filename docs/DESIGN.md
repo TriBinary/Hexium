@@ -22,6 +22,7 @@ Confirmed decisions:
 | Repo | TriBinary/Hexium; development on a fork, merged by PR (as with TownyMenu) |
 | Judgement | CHUNITHM standard; ground hold = head judgement + ticks, no tail; sky slide = hold click + follow path, ticks only, no head or tail |
 | Slide button | Each slide names its required button (L or R), like sky taps |
+| Flick direction | None: a swipe through a flick from any direction hits it (chosen after the Milestone 3 playtest) |
 | Tick rate | Hold and slide ticks are fixed at 1/4 beat in `JudgementConfig`, not set per chart |
 | Package extension | Chart packages are `.hexium` files |
 
@@ -49,7 +50,7 @@ Everything is judged on one plane: the transparent screen in front of the player
 | Sky | Tap (L) | Aim at it, left click | Click time + crosshair inside the hit area |
 | Sky | Tap (R) | Aim at it, right click | Click time + crosshair inside the hit area |
 | Sky | Slide | Hold the click button and keep the crosshair on the moving path | Ticks along the path; no head or tail (add a sky tap at the head if needed) |
-| Sky | Flick | Swipe the crosshair through it, no click | Crossing time + swipe speed (+ optional direction) |
+| Sky | Flick | Swipe the crosshair through it from any direction, no click | Crossing time + swipe speed |
 
 ### Input rules
 
@@ -76,7 +77,7 @@ The editor runs inside the same stage, with the real renderer. Charters see exac
 
 - **Bottom panel (2D):** a horizontal timeline with a waveform, beat grid, and lanes for ground notes and sky notes. Scroll wheel moves through time, Ctrl+scroll zooms.
 - **3D view (top):** the live stage. Sky notes are placed and moved by aiming the crosshair at the screen and clicking, the same way they're played. Slide points are added by aiming, one point per grid step.
-- **Side panel:** properties of the selected note (time, lane, x, y, button, size, direction, ease).
+- **Side panel:** properties of the selected note (time, lane, x, y, button, size, ease).
 
 ### Tools
 

@@ -54,7 +54,7 @@
 + Sky notes can now be played on the screen in front of you: aim with the camera and click.
     + Sky taps fly toward the screen and are hit with a left click (orange) or a right click (blue).
     + Slides are a trail of beads to follow with the button held, with a ring where the slide crosses the screen, white while you hold the button.
-    + Flicks are magenta, with an arrow when they need a direction: swipe through them.
+    + Flicks are magenta: swipe through them from any direction.
     + A faint ring on the screen shows where a coming note will land.
 + Added judging for sky taps, slides and flicks.
     + A swipe that jumps over a flick between two frames still hits it, so low frame rates stay fair.

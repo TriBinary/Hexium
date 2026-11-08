@@ -70,9 +70,7 @@ class TestPackTest {
 			assertTrue(notes.any { it is Note.SkyTap && it.button == button }, "$button sky tap")
 			assertTrue(notes.any { it is Note.Slide && it.button == button }, "$button slide")
 		}
-		assertTrue(notes.any { it is Note.Flick && it.dir == null }, "flick in any direction")
-		val directions = notes.mapNotNull { (it as? Note.Flick)?.dir }.toSet()
-		assertEquals(setOf(0.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0), directions.filter { it % 45.0 == 0.0 }.toSet())
+		assertTrue(notes.any { it is Note.Flick }, "flick")
 	}
 
 	/** The gate asks whether the track stays readable while aiming at the corners. */
@@ -157,7 +155,7 @@ class TestPackTest {
 		val skyNotes = listOf(
 			Note.SkyTap(beat, 0.5, 0.5, SkyButton.L, 1.0),
 			Note.Slide(SkyButton.L, 0.06, listOf(point, point)),
-			Note.Flick(beat, 0.5, 0.5, null, 1.0),
+			Note.Flick(beat, 0.5, 0.5, 1.0),
 		)
 		for (note in skyNotes) assertFalse(empty.copy(notes = listOf(note)).isGroundOnly, note.toString())
 	}

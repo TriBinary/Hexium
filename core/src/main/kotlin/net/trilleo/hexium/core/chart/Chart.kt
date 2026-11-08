@@ -84,12 +84,11 @@ sealed interface Note {
 		val points: List<SlidePoint>,
 	) : Note
 
-	/** [dir] is in degrees (0 = right, 90 = up), or null to accept any direction. */
+	/** Hit by a swipe through it from any direction. */
 	data class Flick(
 		val t: Beat,
 		val x: Double,
 		val y: Double,
-		val dir: Double?,
 		val size: Double,
 	) : Note
 }

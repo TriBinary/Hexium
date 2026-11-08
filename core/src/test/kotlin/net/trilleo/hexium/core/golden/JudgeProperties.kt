@@ -75,7 +75,7 @@ class JudgeProperties {
 		if (!clearOfLimits) return true
 		val dx = Math.cos(Math.toRadians(degrees)) * speed / 2.0
 		val dy = Math.sin(Math.toRadians(degrees)) * speed
-		val chart = JudgeChart.compile(chartOf(Note.Flick(beat(1), 0.5, 0.5, null, 1.0)))
+		val chart = JudgeChart.compile(chartOf(Note.Flick(beat(1), 0.5, 0.5, 1.0)))
 		val judgements = listOf(30.0, 60.0, 120.0, 144.0, 240.0, 360.0).map { fps ->
 			val judge = Judge(chart)
 			val frame = 1000.0 / fps

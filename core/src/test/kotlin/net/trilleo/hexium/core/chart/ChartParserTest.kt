@@ -24,7 +24,7 @@ class ChartParserTest {
 		    { "type": "slide", "button": "L", "radius": 0.06, "points": [
 		        { "t": [6,0,1], "x": 0.20, "y": 0.50, "ease": "linear" },
 		        { "t": [7,0,1], "x": 0.70, "y": 0.80, "ease": "inOut" } ] },
-		    { "type": "flick", "t": [8,0,1], "x": 0.50, "y": 0.40, "dir": 90, "size": 1.0 }
+		    { "type": "flick", "t": [8,0,1], "x": 0.50, "y": 0.40, "size": 1.0 }
 		  ]
 		}
 	""".trimIndent()
@@ -83,7 +83,7 @@ class ChartParserTest {
 							SlidePoint(Beat(7, 0, 1), 0.70, 0.80, Ease.IN_OUT),
 						),
 					),
-					Note.Flick(Beat(8, 0, 1), 0.50, 0.40, 90.0, 1.0),
+					Note.Flick(Beat(8, 0, 1), 0.50, 0.40, 1.0),
 				),
 			),
 			result.value,
@@ -110,11 +110,7 @@ class ChartParserTest {
 	}
 
 	@Test
-	fun optionalFieldsCanBeLeftOut() {
-		val flick = """{ "type": "flick", "t": [8,0,1], "x": 0.5, "y": 0.4, "size": 1.0 }"""
-		val note = ChartParser.parseDifficulty(chartWithNote(flick)).value?.notes?.single()
-		assertEquals(Note.Flick(Beat(8, 0, 1), 0.5, 0.4, null, 1.0), note)
-
+	fun licenseSourceCanBeLeftOut() {
 		val meta = ChartParser.parseMeta(metaExample.replace(""", "source": "https://example.com/license"""", ""))
 		assertEquals(License(LicenseType.PERMITTED, null), meta.value?.license)
 	}
@@ -380,8 +376,19 @@ class ChartParserTest {
 		)
 	}
 
+	/** Flicks hit from any direction, so a `dir` left in an older chart is just an unknown field. */
 	@Test
-	fun everyNoteFieldIsRequiredExceptDir() {
+	fun aFlickDirIsAnUnknownField() {
+		val result = ChartParser.parseDifficulty(chartWithNote("""{ "type": "flick", "t": [1,0,1], "x": 0, "y": 0, "dir": 90, "size": 1 }"""))
+		assertEquals(Note.Flick(Beat(1, 0, 1), 0.0, 0.0, 1.0), result.value!!.notes.single())
+		val issue = result.issues.single()
+		assertEquals(Severity.WARNING, issue.severity)
+		assertEquals(IssueCode.UNKNOWN_FIELD, issue.code)
+		assertEquals("notes[0].dir", issue.path)
+	}
+
+	@Test
+	fun everyNoteFieldIsRequired() {
 		val notes = listOf(
 			"""{ "type": "tap", "t": [1,0,1], "lane": 0 }""" to listOf("t", "lane"),
 			"""{ "type": "hold", "t": [1,0,1], "end": [2,0,1], "lane": 0 }""" to listOf("t", "end", "lane"),
@@ -389,7 +396,7 @@ class ChartParserTest {
 				listOf("t", "x", "y", "button", "size"),
 			"""{ "type": "slide", "button": "L", "radius": 0.1, "points": [] }""" to
 				listOf("button", "radius", "points"),
-			"""{ "type": "flick", "t": [1,0,1], "x": 0, "y": 0, "dir": 0, "size": 1 }""" to
+			"""{ "type": "flick", "t": [1,0,1], "x": 0, "y": 0, "size": 1 }""" to
 				listOf("t", "x", "y", "size"),
 		)
 		for ((note, fields) in notes) {

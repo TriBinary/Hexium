@@ -32,7 +32,7 @@ class ReplayPlayTest {
 			0.1,
 			listOf(SlidePoint(beat(4), 0.2, 0.5, Ease.IN_OUT), SlidePoint(beat(5), 0.8, 0.5, Ease.LINEAR)),
 		),
-		Note.Flick(beat(6), 0.5, 0.5, 0.0, 1.0),
+		Note.Flick(beat(6), 0.5, 0.5, 1.0),
 		Note.Tap(beat(7), 3),
 	)
 	private val chartFile = ChartWriter.writeDifficulty(chart).toByteArray()

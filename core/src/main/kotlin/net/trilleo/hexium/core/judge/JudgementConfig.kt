@@ -19,7 +19,6 @@ data class JudgementConfig(
 	val flickJusticeMs: Double = 166.67,
 	/** In screen heights per second. */
 	val flickMinSpeed: Double = 1.0,
-	val flickDirectionToleranceDegrees: Double = 45.0,
 
 	/** A note's hit radius at `size` 1, as a fraction of the screen's height. */
 	val baseHitRadius: Double = 0.08,
@@ -36,6 +35,6 @@ data class JudgementConfig(
 		val DEFAULT = JudgementConfig()
 
 		/** Raise this whenever a change could alter a replay's result (docs/REPLAY_FORMAT.md). */
-		const val JUDGE_VERSION: Int = 1
+		const val JUDGE_VERSION: Int = 2
 	}
 }

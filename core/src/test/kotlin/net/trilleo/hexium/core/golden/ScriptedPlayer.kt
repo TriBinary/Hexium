@@ -38,6 +38,7 @@ internal class ScriptedPlayer(private val chartFile: ByteArray) {
 
 	private class SlideRun(val startMs: Double, val endMs: Double, val path: SlidePath)
 
+	/** Any direction hits a flick. The scripted swipes always go right, so the goldens stay fixed. */
 	private class Swipe(val ms: Double, val x: Double, val y: Double, val radians: Double)
 
 	fun play(style: PlayStyle): ReplayRecorder {
@@ -94,7 +95,7 @@ internal class ScriptedPlayer(private val chartFile: ByteArray) {
 					val at = timing.beatToMs(note.t)
 					firstMs = minOf(firstMs, at)
 					lastMs = maxOf(lastMs, at)
-					if (style.playSky) swipes += Swipe(at + style.swipeLateMs, note.x, note.y, Math.toRadians(note.dir ?: 0.0))
+					if (style.playSky) swipes += Swipe(at + style.swipeLateMs, note.x, note.y, 0.0)
 				}
 			}
 		}

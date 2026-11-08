@@ -10,8 +10,8 @@ import net.trilleo.hexium.core.chart.SlidePoint
 
 class JudgeFlickTest {
 	/** At time 0, so window limits are exact. */
-	private fun flick(whole: Int = 0, x: Double = 0.5, y: Double = 0.5, dir: Double? = null, size: Double = 1.0) =
-		Note.Flick(beat(whole), x, y, dir, size)
+	private fun flick(whole: Int = 0, x: Double = 0.5, y: Double = 0.5, size: Double = 1.0) =
+		Note.Flick(beat(whole), x, y, size)
 
 	/** Starts inside the hit area at [ms] and leaves fast, so the crossing time is exactly [ms]. */
 	private fun swipeFrom(ms: Double): List<Judgement> {
@@ -96,7 +96,7 @@ class JudgeFlickTest {
 
 	@Test
 	fun flicksAreRecordedInTheOrderTheyAreCrossed() {
-		val judge = judgeOf(flick(1, x = 0.7), Note.Flick(beat(1, 1, 20), 0.3, 0.5, null, 1.0))
+		val judge = judgeOf(flick(1, x = 0.7), Note.Flick(beat(1, 1, 20), 0.3, 0.5, 1.0))
 		judge.aimSample(1000.0, 0.1f, 0.5f)
 		judge.aimSample(1010.0, 0.9f, 0.5f)
 		assertEquals(listOf(1, 0), List(judge.judgedCount) { judge.judgedNote(it) })
@@ -219,8 +219,8 @@ class JudgeFlickTest {
 	}
 
 	/** Swipes through the note at [degrees], measured in screen heights. */
-	private fun swipeAt(degrees: Double, requiredDir: Double?): Int {
-		val judge = judgeOf(flick(dir = requiredDir))
+	private fun swipeAt(degrees: Double): Int {
+		val judge = judgeOf(flick())
 		val radians = Math.toRadians(degrees)
 		val dx = Math.cos(radians) * 0.2 / 2.0
 		val dy = Math.sin(radians) * 0.2
@@ -230,42 +230,18 @@ class JudgeFlickTest {
 	}
 
 	@Test
-	fun leavingOutTheDirectionAcceptsAny() {
-		for (degrees in listOf(0.0, 90.0, 180.0, 270.0, 33.0)) assertEquals(1, swipeAt(degrees, null))
+	fun aSwipeFromAnyDirectionHits() {
+		for (degrees in listOf(0.0, 33.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0, 359.0)) assertEquals(1, swipeAt(degrees), "$degrees degrees")
 	}
 
 	@Test
-	fun theDirectionIsMeasuredWith0RightAnd90Up() {
-		assertEquals(1, swipeAt(0.0, 0.0))
-		assertEquals(1, swipeAt(90.0, 90.0))
-		assertEquals(1, swipeAt(180.0, 180.0))
-		assertEquals(1, swipeAt(270.0, 270.0))
-		assertEquals(0, swipeAt(180.0, 0.0))
-		assertEquals(0, swipeAt(270.0, 90.0))
-	}
-
-	@Test
-	fun theDirectionHas45DegreesOfTolerance() {
-		assertEquals(1, swipeAt(134.0, 90.0))
-		assertEquals(1, swipeAt(46.0, 90.0))
-		assertEquals(0, swipeAt(136.0, 90.0))
-		assertEquals(0, swipeAt(44.0, 90.0))
-	}
-
-	@Test
-	fun theToleranceWrapsAround360() {
-		assertEquals(1, swipeAt(10.0, 350.0))
-		assertEquals(1, swipeAt(350.0, 10.0))
-		assertEquals(0, swipeAt(60.0, 350.0))
-	}
-
-	@Test
-	fun wrongDirectionCanBeFollowedByARightOne() {
-		val judge = judgeOf(flick(dir = 0.0))
-		judge.aimSample(-30.0, 0.7f, 0.5f)
-		judge.aimSample(-20.0, 0.3f, 0.5f)
-		assertEquals(0, judge.judgedCount)
-		judge.aimSample(-10.0, 0.7f, 0.5f)
+	fun aSwipeBackAfterMissingCanStillHit() {
+		val judge = judgeOf(flick())
+		judge.aimSample(-30.0, 0.9f, 0.9f)
+		judge.aimSample(-20.0, 0.9f, 0.1f)
+		assertEquals(0, judge.judgedCount, "the first swipe passed beside the note")
+		// Back across the middle, through the note.
+		judge.aimSample(-10.0, 0.1f, 0.9f)
 		assertEquals(jc, judge.judgements())
 	}
 

@@ -17,9 +17,9 @@ import net.trilleo.hexium.core.chart.SkyTrack
  * ground. A note flies toward the screen down the depth axis at the note speed and is judged where it
  * meets it. Every size is the judge's own hit area from [SkyTrack], so what's drawn is what counts.
  * Notes face the player as flat octagons just around their hit circle: sky taps orange (L) or blue
- * (R), flicks magenta with an arrow when they need a direction. A slide is a trail of beads down its
- * path, with a ring where it crosses the screen now, brighter while its button is down. A tap or flick
- * coming up also shows a faint ring on the screen where it will land.
+ * (R), flicks magenta. A slide is a trail of beads down its path, with a ring where it crosses the
+ * screen now, brighter while its button is down. A tap or flick coming up also shows a faint ring on
+ * the screen where it will land.
  *
  * Like the ground, nothing here writes depth, so each layer is submitted in its own order, drawn in turn
  * after the ground's: notes, then the pane in front of them, then marks on the screen. Geometry
@@ -38,7 +38,6 @@ object SkyRenderer {
 	private const val TAP_L = 0xE8FF8C1A.toInt()
 	private const val TAP_R = 0xE83C8CFF.toInt()
 	private const val FLICK = 0xE8E040E0.toInt()
-	private const val ARROW = 0xFFFFFFFF.toInt()
 	private const val SLIDE_HEAD_HELD = 0xFFFFFFFF.toInt()
 
 	/** A slide's beads are this much of its hit radius, so the path reads as a line. */
@@ -154,9 +153,6 @@ object SkyRenderer {
 				val z = StageGeometry.JUDGEMENT_Z + distance
 				val radius = worldRadius(sky.radius(i))
 				octagon(buffer, x, y, z, radius, faded(noteColor(sky, i), distance))
-				// With its own note, so it sorts in front of that note and no other.
-				val direction = sky.directionDegrees(i)
-				if (!direction.isNaN()) arrow(buffer, x, y, z - MARK_LIFT, radius, direction, faded(ARROW, distance))
 				drawn++
 			}
 			i++
@@ -269,23 +265,6 @@ object SkyRenderer {
 			vertex(buffer, x + inner * OCTAGON_COS[n], y + inner * OCTAGON_SIN[n], fz, color)
 			vertex(buffer, x + inner * OCTAGON_COS[k], y + inner * OCTAGON_SIN[k], fz, color)
 		}
-	}
-
-	/** A triangle pointing [degrees] across the screen (0 = right, 90 = up), as a quad with its tip twice. */
-	private fun arrow(buffer: VertexConsumer, x: Double, y: Double, z: Double, radius: Double, degrees: Double, color: Int) {
-		val radians = Math.toRadians(degrees)
-		// The screen's right is world -X.
-		val dx = -Math.cos(radians)
-		val dy = Math.sin(radians)
-		val fz = (z - cameraZ).toFloat()
-		val tipX = x + dx * radius * 0.8
-		val tipY = y + dy * radius * 0.8
-		val baseX = x - dx * radius * 0.4
-		val baseY = y - dy * radius * 0.4
-		vertex(buffer, tipX, tipY, fz, color)
-		vertex(buffer, baseX - dy * radius * 0.5, baseY + dx * radius * 0.5, fz, color)
-		vertex(buffer, baseX + dy * radius * 0.5, baseY - dx * radius * 0.5, fz, color)
-		vertex(buffer, tipX, tipY, fz, color)
 	}
 
 	/** An upright rectangle across the screen plane at [z], between two corners. */

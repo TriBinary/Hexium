@@ -51,8 +51,10 @@ class GoldenReplayTest {
 	 * - attack_advanced: 15 x 50 + 14 x 101 = 2164. 21,640,000 / 29 = 746,206. 90 ms late is Attack only on easy charts.
 	 * - ground_only_expert: 40 x 101 = 4040. 40,400,000 / 53 = 762,264.
 	 * - sloppy_expert: presses 70 ms late are Attack on Expert (24: 18 taps, 3 heads, 3 sky taps). Flicks swiped 150 ms
-	 *   late are Justice (3): beat 10's, with no required direction, is crossed a little earlier, on the jump from
-	 *   rest to the start of its swipe, at about +111 ms, which is still Justice. The 26 ticks stay Justice Critical. 24 x 50 + 3 x 100 + 26 x 101 = 4126.
+	 *   late are Justice (3): beat 10's is crossed a little earlier, on the jump from rest to the start of its swipe,
+	 *   at about +111 ms, which is still Justice. The jumps to the starts of beat 9.5's and beat 20's swipes pass
+	 *   beside those notes (closest about 0.092 against radius 0.08, and 0.24 against 0.12), so they're crossed on
+	 *   the swipe itself, at 150 - 40 + 26.67 = +136.67 ms and 150 - 40 + 20 = +130 ms. The 26 ticks stay Justice Critical. 24 x 50 + 3 x 100 + 26 x 101 = 4126.
 	 *   41,260,000 / 53 = 778,490.
 	 * - ground_only_expert best combo: it's 10, between the hold head at 10.5 and the sky tap at 12 (missed at 12.24): 5 ticks,
 	 *   the taps at 11, 11.25 and 11.5, and two taps at 12. By time alone it would be 11, but the flick at beat 10

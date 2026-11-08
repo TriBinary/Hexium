@@ -43,7 +43,7 @@ class JudgeAllocationTest {
 		val notes = Array<Note>(30_000) {
 			when (it % 3) {
 				0 -> Note.SkyTap(beat(it + 1), 0.5, 0.5, SkyButton.L, 1.0)
-				1 -> Note.Flick(beat(it + 1), 0.5, 0.5, 90.0, 1.0)
+				1 -> Note.Flick(beat(it + 1), 0.5, 0.5, 1.0)
 				else -> Note.Slide(
 					SkyButton.R,
 					0.1,

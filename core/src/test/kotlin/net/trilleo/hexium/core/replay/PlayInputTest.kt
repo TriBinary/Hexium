@@ -432,7 +432,7 @@ class PlayInputTest {
 				1, Difficulty.EXPERT, 1, 4, 0.0,
 				listOf(BpmChange(beat(0), 120.0)),
 				listOf(MeterChange(beat(0), 4, 4)),
-				listOf(Note.Tap(beat(20), 0), Note.Flick(beat(20), 0.5, 0.5, null, 1.0)),
+				listOf(Note.Tap(beat(20), 0), Note.Flick(beat(20), 0.5, 0.5, 1.0)),
 			),
 		)
 		val liveRecorder = ReplayRecorder(skyChart, ByteArray(32), 0.0, 100)

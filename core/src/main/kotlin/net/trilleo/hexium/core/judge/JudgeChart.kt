@@ -39,8 +39,6 @@ class JudgeChart private constructor(
 	internal val flickX: DoubleArray,
 	internal val flickY: DoubleArray,
 	internal val flickRadius: DoubleArray,
-	/** NaN accepts any direction. */
-	internal val flickDir: DoubleArray,
 	internal val slideStartMs: DoubleArray,
 	internal val slideEndMs: DoubleArray,
 	internal val slideButton: IntArray,
@@ -164,7 +162,6 @@ class JudgeChart private constructor(
 				DoubleArray(flicks.size) { flicks[it].flick.x },
 				DoubleArray(flicks.size) { flicks[it].flick.y },
 				DoubleArray(flicks.size) { flicks[it].flick.size * config.baseHitRadius },
-				DoubleArray(flicks.size) { flicks[it].flick.dir ?: Double.NaN },
 				DoubleArray(slides.size) { slides[it].startMs },
 				DoubleArray(slides.size) { slides[it].endMs },
 				IntArray(slides.size) { slides[it].slide.button.ordinal },

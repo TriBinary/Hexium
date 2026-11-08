@@ -336,10 +336,6 @@ private class ChartChecker(private val chart: DifficultyChart, private val audio
 	private fun checkFlick(note: Note.Flick, path: String) {
 		checkPosition(note.x, note.y, path)
 		checkSize(note.size, path)
-		val dir = note.dir
-		if (dir != null && !(dir >= 0.0 && dir < 360.0)) {
-			report(IssueCode.DIR_OUT_OF_RANGE, "$path.dir", "is $dir, must be from 0 up to 360")
-		}
 		if (!checkBeat(note.t, "$path.t")) return
 		starts += NoteStart(note.t, true, path)
 		noteEnd(note.t, path)

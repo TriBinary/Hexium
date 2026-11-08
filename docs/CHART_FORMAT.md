@@ -62,14 +62,14 @@ Difficulties are `BASIC`, `ADVANCED`, `EXPERT` and `MASTER`.
     { "type": "slide", "button": "L", "radius": 0.06, "points": [
         { "t": [6,0,1], "x": 0.20, "y": 0.50, "ease": "linear" },
         { "t": [7,0,1], "x": 0.70, "y": 0.80, "ease": "inOut" } ] },
-    { "type": "flick", "t": [8,0,1], "x": 0.50, "y": 0.40, "dir": 90, "size": 1.0 }
+    { "type": "flick", "t": [8,0,1], "x": 0.50, "y": 0.40, "size": 1.0 }
   ]
 }
 ```
 
-`dir` on a flick is optional, in degrees (0 = right, 90 = up). Leave it out to accept any direction. Difficulties BASIC and ADVANCED use the easy tap windows. `level` is a whole number.
+A flick has no direction: a swipe through it from any direction hits it. A `dir` field from earlier drafts of format v1 is treated like any unknown field: a warning, and the chart still loads. Difficulties BASIC and ADVANCED use the easy tap windows. `level` is a whole number.
 
-`button` is required on sky taps and slides, and is `L` or `R`. Every other field in the example is required. `size` is a multiplier on the base hit area in `JudgementConfig`, so 1 is normal. `radius` is a fraction of the screen's height, so a slide's hit area is a circle: on the 9.24-block-tall screen, a `radius` of 0.06 is about 0.55 blocks in every direction.
+`button` is `L` or `R`. Every field in the example is required. `size` is a multiplier on the base hit area in `JudgementConfig`, so 1 is normal. `radius` is a fraction of the screen's height, so a slide's hit area is a circle: on the 9.24-block-tall screen, a `radius` of 0.06 is about 0.55 blocks in every direction.
 
 `ease` is `linear`, `in`, `out` or `inOut`. It shapes the segment leaving that point, so the last point's `ease` is ignored (but still required). With `t` as the progress along the segment from 0 to 1, measured in beats so a BPM change doesn't bend the path, the position moves by `t` for `linear`, `t²` for `in`, `1 − (1 − t)²` for `out` and `3t² − 2t³` for `inOut`.
 
@@ -91,7 +91,7 @@ Errors:
 - Holds in the same lane don't overlap. A tap doesn't sit inside a hold in its lane. A hold covers its start up to, but not including, its end: a hold may start exactly where another ends, and a tap may sit exactly on a hold's end, but a tap on a hold's head is an error.
 - No two taps or hold heads share the same time and lane, since one press resolves at most one note. (Two holds sharing a head are reported as an overlap.)
 - Slide points rise strictly in time, with at least 2 points. All x and y values are in \[0, 1\].
-- `size` and `radius` are finite and above 0. `dir` is from 0 up to (not including) 360.
+- `size` and `radius` are finite and above 0.
 - The last note ends before the audio does. The package is under 30 MiB.
 - Every note and BPM entry has a finite time, so a note can always be judged. A difficulty file's name matches its `difficulty` (checked by whatever reads the files).
 - A chart has at most 1,000,000 judged objects (see [JUDGEMENT.md](JUDGEMENT.md)), so a huge hold can't exhaust memory when its ticks are built.

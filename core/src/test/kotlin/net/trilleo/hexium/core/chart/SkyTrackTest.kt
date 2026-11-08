@@ -35,7 +35,6 @@ class SkyTrackTest {
 		assertEquals(1100.0, track.endMs(0), tolerance)
 		assertEquals(0.25, track.x(0, 0.0), tolerance)
 		assertEquals(0.75, track.y(0, 5000.0), tolerance)
-		assertTrue(track.directionDegrees(0).isNaN())
 	}
 
 	/** The judge's hit circle, so what's drawn is what counts. */
@@ -47,26 +46,19 @@ class SkyTrackTest {
 
 	@Test
 	fun theRadiusFollowsTheConfigItIsGiven() {
-		val track = SkyTrack(chart(Note.Flick(beat(1), 0.5, 0.5, null, 2.0)), JudgementConfig(baseHitRadius = 0.1))
+		val track = SkyTrack(chart(Note.Flick(beat(1), 0.5, 0.5, 2.0)), JudgementConfig(baseHitRadius = 0.1))
 		assertEquals(0.2, track.radius(0), tolerance)
 	}
 
 	@Test
-	fun aFlickNeedsNoButtonAndKeepsItsDirection() {
-		val track = track(Note.Flick(beat(4), 0.3, 0.4, 225.0, 1.0))
+	fun aFlickNeedsNoButton() {
+		val track = track(Note.Flick(beat(4), 0.3, 0.4, 1.0))
 		assertEquals(SkyTrack.Kind.FLICK, track.kind(0))
 		assertNull(track.button(0))
 		assertEquals(2000.0, track.startMs(0), tolerance)
 		assertEquals(2000.0, track.endMs(0), tolerance)
-		assertEquals(225.0, track.directionDegrees(0), tolerance)
 		assertEquals(0.3, track.x(0, 2000.0), tolerance)
 		assertEquals(0.4, track.y(0, 2000.0), tolerance)
-	}
-
-	@Test
-	fun aFlickWithoutADirectionTakesAny() {
-		val track = track(Note.Flick(beat(4), 0.3, 0.4, null, 1.0))
-		assertTrue(track.directionDegrees(0).isNaN())
 	}
 
 	@Test
@@ -77,7 +69,6 @@ class SkyTrackTest {
 		assertEquals(1000.0, track.startMs(0), tolerance)
 		assertEquals(3000.0, track.endMs(0), tolerance)
 		assertEquals(0.06, track.radius(0), tolerance)
-		assertTrue(track.directionDegrees(0).isNaN())
 	}
 
 	@Test
@@ -113,7 +104,7 @@ class SkyTrackTest {
 	@Test
 	fun notesAreInTimeOrderAndRememberTheirPlaceInTheChart() {
 		val track = track(
-			Note.Flick(beat(3), 0.5, 0.5, null, 1.0),
+			Note.Flick(beat(3), 0.5, 0.5, 1.0),
 			Note.Tap(beat(1), 0),
 			Note.SkyTap(beat(1), 0.5, 0.5, SkyButton.L, 1.0),
 			slide(SkyButton.R, 0.06, point(beat(2), 0.5, 0.5), point(beat(5), 0.5, 0.5)),
@@ -136,7 +127,7 @@ class SkyTrackTest {
 		val track = track(
 			Note.SkyTap(beat(1), 0.5, 0.5, SkyButton.L, 1.0),
 			Note.SkyTap(beat(2), 0.5, 0.5, SkyButton.L, 1.0),
-			Note.Flick(beat(3), 0.5, 0.5, null, 1.0),
+			Note.Flick(beat(3), 0.5, 0.5, 1.0),
 		)
 		assertEquals(0, track.firstEndingFrom(-5000.0))
 		assertEquals(0, track.firstEndingFrom(500.0))
@@ -192,8 +183,6 @@ class SkyTrackTest {
 						assertEquals(judge.flickX[k], sky.x(i, 0.0), tolerance)
 						assertEquals(judge.flickY[k], sky.y(i, 0.0), tolerance)
 						assertEquals(judge.flickRadius[k], sky.radius(i), tolerance)
-						assertEquals(judge.flickDir[k].isNaN(), sky.directionDegrees(i).isNaN())
-						if (!judge.flickDir[k].isNaN()) assertEquals(judge.flickDir[k], sky.directionDegrees(i), tolerance)
 					}
 					SkyTrack.Kind.SLIDE -> {
 						// Both keep slides in start order.
@@ -229,7 +218,7 @@ class SkyTrackTest {
 		val track = track(
 			Note.SkyTap(beat(1), 0.5, 0.5, SkyButton.L, 1.0),
 			slide(SkyButton.R, 0.06, point(beat(2), 0.2, 0.5), point(beat(4), 0.6, 0.9, Ease.IN_OUT), point(beat(6), 0.6, 0.1)),
-			Note.Flick(beat(7), 0.5, 0.5, 90.0, 1.0),
+			Note.Flick(beat(7), 0.5, 0.5, 1.0),
 		)
 		val threads = ManagementFactory.getThreadMXBean() as com.sun.management.ThreadMXBean
 		val thread = Thread.currentThread().threadId()
@@ -240,7 +229,6 @@ class SkyTrackTest {
 			var n = track.firstEndingFrom(ms)
 			while (n < track.size) {
 				sum += track.x(n, ms) + track.y(n, ms) + track.radius(n) + track.startMs(n) + track.endMs(n)
-				if (track.kind(n) == SkyTrack.Kind.FLICK) sum += track.directionDegrees(n)
 				if (track.button(n) == SkyButton.L) sum += track.chartNote(n)
 				n++
 			}

@@ -73,7 +73,6 @@ object ChartWriter {
 			}
 			is Note.Flick -> {
 				append("{ \"type\": \"flick\", \"t\": ${beat(note.t)}, \"x\": ${number(note.x)}, \"y\": ${number(note.y)}, ")
-				if (note.dir != null) append("\"dir\": ${number(note.dir)}, ")
 				append("\"size\": ${number(note.size)} }")
 			}
 		}

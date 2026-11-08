@@ -28,8 +28,8 @@ class ChartValidatorTest {
 	private fun skyTap(t: Beat, x: Double = 0.5, y: Double = 0.5, size: Double = 1.0) =
 		Note.SkyTap(t, x, y, SkyButton.L, size)
 
-	private fun flick(t: Beat, x: Double = 0.5, y: Double = 0.5, dir: Double? = null, size: Double = 1.0) =
-		Note.Flick(t, x, y, dir, size)
+	private fun flick(t: Beat, x: Double = 0.5, y: Double = 0.5, size: Double = 1.0) =
+		Note.Flick(t, x, y, size)
 
 	private fun assertValid(chart: DifficultyChart, audioDurationMs: Double? = null) {
 		assertEquals(emptyList(), ChartValidator.validateChart(chart, audioDurationMs))
@@ -384,19 +384,6 @@ class ChartValidatorTest {
 			assertOnlyError(withNotes(skyTap(b(1), size = bad)), IssueCode.SIZE_NOT_POSITIVE, "notes[0].size")
 			assertOnlyError(withNotes(slide(point(b(1)), point(b(2)), radius = bad)), IssueCode.RADIUS_NOT_POSITIVE, "notes[0].radius")
 		}
-	}
-
-	@Test
-	fun dirInRangeOrLeftOutPasses() {
-		assertValid(withNotes(flick(b(1), dir = 0.0), flick(b(2), dir = 359.9), flick(b(3), dir = null)))
-	}
-
-	@Test
-	fun dirOutOfRangeFails() {
-		assertOnlyError(withNotes(flick(b(1), dir = 360.0)), IssueCode.DIR_OUT_OF_RANGE, "notes[0].dir")
-		assertOnlyError(withNotes(flick(b(1), dir = -1.0)), IssueCode.DIR_OUT_OF_RANGE, "notes[0].dir")
-		assertOnlyError(withNotes(flick(b(1), dir = Double.NaN)), IssueCode.DIR_OUT_OF_RANGE, "notes[0].dir")
-		assertOnlyError(withNotes(flick(b(1), dir = Double.POSITIVE_INFINITY)), IssueCode.DIR_OUT_OF_RANGE, "notes[0].dir")
 	}
 
 	// The last note against the audio. At 120 BPM, beat 4 is 2000 ms.

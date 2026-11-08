@@ -208,13 +208,12 @@ class Judge(private val chart: JudgeChart, private val judgementOffsetMs: Double
 		val dy = toY - aimY
 		val length = Math.sqrt(dx * dx + dy * dy)
 		if (length * 1000.0 / dt <= config.flickMinSpeed) return
-		val angle = Math.toDegrees(StrictMath.atan2(dy, dx))
 		while (true) {
 			var crossed = -1
 			var crossedAtMs = Double.POSITIVE_INFINITY
 			var i = nextFlick
 			while (i < flickJudged.size && chart.flickMs[i] - config.flickJusticeMs <= now) {
-				if (!flickJudged[i] && directionFits(i, angle)) {
+				if (!flickJudged[i]) {
 					val atMs = crossingInWindowMs(i, dx, dy, dt)
 					if (atMs < crossedAtMs && atMs - chart.flickMs[i] <= config.flickJusticeMs) {
 						crossed = i
@@ -227,14 +226,6 @@ class Judge(private val chart: JudgeChart, private val judgementOffsetMs: Double
 			settleBefore(crossedAtMs, waitForFlicks = false)
 			judgeFlick(crossed, crossedAtMs)
 		}
-	}
-
-	private fun directionFits(flick: Int, angle: Double): Boolean {
-		val dir = chart.flickDir[flick]
-		if (dir.isNaN()) return true
-		val difference = Math.abs(angle - dir) % 360.0
-		val shortest = if (difference > 180.0) 360.0 - difference else difference
-		return shortest <= config.flickDirectionToleranceDegrees
 	}
 
 	/**

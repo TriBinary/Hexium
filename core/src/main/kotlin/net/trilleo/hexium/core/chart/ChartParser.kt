@@ -103,7 +103,7 @@ private val HOLD_FIELDS = setOf("type", "t", "end", "lane")
 private val SKY_TAP_FIELDS = setOf("type", "t", "x", "y", "button", "size")
 private val SLIDE_FIELDS = setOf("type", "button", "radius", "points")
 private val SLIDE_POINT_FIELDS = setOf("t", "x", "y", "ease")
-private val FLICK_FIELDS = setOf("type", "t", "x", "y", "dir", "size")
+private val FLICK_FIELDS = setOf("type", "t", "x", "y", "size")
 
 private val DIFFICULTY_NAMES = Difficulty.entries.map { it.name to it }
 private val BUTTON_NAMES = SkyButton.entries.map { it.name to it }
@@ -289,11 +289,9 @@ private class FileReader {
 		val t = beat(note, "t", path)
 		val x = double(note, "x", path)
 		val y = double(note, "y", path)
-		val hasDir = "dir" in note
-		val dir = if (hasDir) double(note, "dir", path) else null
 		val size = double(note, "size", path)
-		if (t == null || x == null || y == null || size == null || (hasDir && dir == null)) return null
-		return Note.Flick(t, x, y, dir, size)
+		if (t == null || x == null || y == null || size == null) return null
+		return Note.Flick(t, x, y, size)
 	}
 
 	private fun warnUnknownFields(obj: JsonObject, path: String, known: Set<String>) {

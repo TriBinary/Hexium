@@ -27,8 +27,7 @@ class ChartWriterTest {
 					SlidePoint(Beat(7, 0, 1), 0.7, 0.8, Ease.IN_OUT),
 				),
 			),
-			Note.Flick(Beat(8, 0, 1), 0.5, 0.4, 90.0, 1.0),
-			Note.Flick(Beat(9, 0, 1), 0.5, 0.4, null, 1.0),
+			Note.Flick(Beat(8, 0, 1), 0.5, 0.4, 1.0),
 		),
 	)
 
@@ -63,7 +62,7 @@ class ChartWriterTest {
 						SlidePoint(Beat(7, 0, 1), 0.7, 0.8, Ease.IN_OUT),
 					),
 				),
-				Note.Flick(Beat(8, 0, 1), 0.5, 0.4, null, 1.0),
+				Note.Flick(Beat(8, 0, 1), 0.5, 0.4, 1.0),
 			),
 		)
 		assertEquals(

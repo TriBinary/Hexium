@@ -21,7 +21,6 @@ class SkyTrack(chart: DifficultyChart, config: JudgementConfig = JudgementConfig
 		val y: Double,
 		val button: SkyButton?,
 		val radius: Double,
-		val directionDegrees: Double,
 		val chartNote: Int,
 		val path: SlidePath?,
 	)
@@ -34,7 +33,6 @@ class SkyTrack(chart: DifficultyChart, config: JudgementConfig = JudgementConfig
 	private val ys: DoubleArray
 	private val buttons: Array<SkyButton?>
 	private val radii: DoubleArray
-	private val directions: DoubleArray
 	private val chartNotes: IntArray
 	private val paths: Array<SlidePath?>
 
@@ -47,17 +45,17 @@ class SkyTrack(chart: DifficultyChart, config: JudgementConfig = JudgementConfig
 			when (val note = chart.notes[i]) {
 				is Note.SkyTap -> {
 					val ms = timing.beatToMs(note.t)
-					entries += Entry(Kind.TAP, ms, ms, note.x, note.y, note.button, config.baseHitRadius * note.size, Double.NaN, i, null)
+					entries += Entry(Kind.TAP, ms, ms, note.x, note.y, note.button, config.baseHitRadius * note.size, i, null)
 				}
 				is Note.Flick -> {
 					val ms = timing.beatToMs(note.t)
-					entries += Entry(Kind.FLICK, ms, ms, note.x, note.y, null, config.baseHitRadius * note.size, note.dir ?: Double.NaN, i, null)
+					entries += Entry(Kind.FLICK, ms, ms, note.x, note.y, null, config.baseHitRadius * note.size, i, null)
 				}
 				is Note.Slide -> {
 					val first = note.points.first()
 					entries += Entry(
 						Kind.SLIDE, timing.beatToMs(first.t), timing.beatToMs(note.points.last().t),
-						first.x, first.y, note.button, note.radius, Double.NaN, i, SlidePath(note.points),
+						first.x, first.y, note.button, note.radius, i, SlidePath(note.points),
 					)
 				}
 				else -> {}
@@ -72,7 +70,6 @@ class SkyTrack(chart: DifficultyChart, config: JudgementConfig = JudgementConfig
 		ys = DoubleArray(entries.size) { entries[it].y }
 		buttons = Array(entries.size) { entries[it].button }
 		radii = DoubleArray(entries.size) { entries[it].radius }
-		directions = DoubleArray(entries.size) { entries[it].directionDegrees }
 		chartNotes = IntArray(entries.size) { entries[it].chartNote }
 		paths = Array(entries.size) { entries[it].path }
 		endsSoFar = DoubleArray(entries.size)
@@ -104,9 +101,6 @@ class SkyTrack(chart: DifficultyChart, config: JudgementConfig = JudgementConfig
 
 	/** The hit radius, as a fraction of the screen's height, measured with [screenAspect] (docs/JUDGEMENT.md). */
 	fun radius(index: Int): Double = radii[index]
-
-	/** A flick's required direction in degrees (0 = right, 90 = up), or NaN if any will do. NaN for taps and slides. */
-	fun directionDegrees(index: Int): Double = directions[index]
 
 	/** Where the note is across the screen at [timeMs], 0 (left) to 1 (right). Only a slide moves. */
 	fun x(index: Int, timeMs: Double): Double {
