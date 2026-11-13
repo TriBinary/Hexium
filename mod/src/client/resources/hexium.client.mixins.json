@@ -2,7 +2,16 @@
 	"required": true,
 	"package": "net.trilleo.hexium.client.mixin",
 	"compatibilityLevel": "JAVA_25",
-	"client": [],
+	"client": [
+		"CameraMixin",
+		"KeyboardInputMixin",
+		"MinecraftMixin",
+		"MouseHandlerMixin",
+		"MusicManagerMixin",
+		"SDLEventHandlerMixin",
+		"SoundLibraryMixin",
+		"TutorialMixin"
+	],
 	"injectors": {
 		"defaultRequire": 1
 	},

@@ -1,0 +1,10 @@
+{
+  "formatVersion": 1,
+  "id": "test-pattern",
+  "title": "Test Pattern",
+  "artist": "Hexium",
+  "charter": "Hexium",
+  "previewStartMs": 0,
+  "license": { "type": "original", "source": "A click track generated for Hexium" },
+  "difficulties": [ "BASIC", "ADVANCED", "EXPERT" ]
+}

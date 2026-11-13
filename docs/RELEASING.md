@@ -1,6 +1,6 @@
 # Releasing
 
-Two GitHub workflows, based on TownyMenu's, do all builds and releases (listed under Workflows below). `build.yml` builds and tests every push and PR and keeps the jar as a downloadable artifact. `release.yml` publishes a GitHub Release, and optionally a Modrinth version, whenever a commit that changes `mod_version` lands on `main` in TriBinary/Hexium. Forks never release, so pushing to your fork is always safe.
+Two GitHub workflows, based on TownyMenu's, do all builds and releases (listed under Workflows below). `build.yml` builds and tests every push and PR, lints the example charts and keeps the jar as a downloadable artifact, and also tries the client game tests. `release.yml` publishes a GitHub Release, and optionally a Modrinth version, whenever a commit that changes `mod_version` lands on `main` in TriBinary/Hexium. Forks never release, so pushing to your fork is always safe.
 
 ## Changelog format
 
@@ -48,7 +48,7 @@ Two GitHub workflows, based on TownyMenu's, do all builds and releases (listed u
 
 ## Workflows
 
-- [`.github/workflows/build.yml`](../.github/workflows/build.yml) builds and tests every push and pull request with JDK 25, and uploads `mod/build/libs/` as the `hexium-dev-build` artifact. A commented-out job runs client game tests under a virtual display; turn it on in Milestone 2 once those tests exist (check Loom's task name first).
+- [`.github/workflows/build.yml`](../.github/workflows/build.yml) builds and tests every push and pull request with JDK 25, lints the example charts, and uploads `mod/build/libs/` as the `hexium-dev-build` artifact. A second job runs the client game tests on a virtual display with a fake audio device (`ALSOFT_DRIVERS=null`) and keeps the screenshots. It can't fail the build yet: remove its `continue-on-error` once it has passed reliably on GitHub's machines.
 - [`.github/workflows/release.yml`](../.github/workflows/release.yml) runs when `gradle.properties` changes on `main` (or by hand). It skips forks, reads `mod_version`, and does nothing if the tag `v<mod_version>` already exists. Otherwise it takes the matching `## Version X.Y.Z` section of `CHANGELOG.md` as release notes (and fails if there isn't one), builds, and creates the GitHub Release with `hexium-<version>.jar` attached.
 - Modrinth publishing is part of `release.yml` but stays off until the repository variable `MODRINTH_PROJECT_ID` and the secret `MODRINTH_TOKEN` are set. It lists Fabric API and Fabric Language Kotlin as required dependencies. Check the publishing action's current version and inputs before turning it on.
 

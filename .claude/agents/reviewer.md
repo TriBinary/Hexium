@@ -11,7 +11,7 @@ Check, in order:
 2. Judgement/scoring logic outside `core`, or constants not in JudgementConfig.
 3. Mixins/hooks missing the HexiumSession.active() guard.
 4. New `core` behaviour without tests; tests that only test the happy path.
-5. Mismatch with docs/JUDGEMENT.md or docs/CHART_FORMAT.md.
+5. Mismatch with docs/JUDGEMENT.md, docs/CHART_FORMAT.md or docs/REPLAY_FORMAT.md.
 6. A proposed commit message not following docs/COMMIT_STRUCTURE.md, or a Feature,
    Improvement or Fix change without its CHANGELOG.md entry.
 7. Docs the change affects but doesn't update (code, settings, commands, rules

@@ -1,0 +1,30 @@
+{
+  "formatVersion": 1,
+  "difficulty": "BASIC",
+  "level": 2,
+  "laneCount": 4,
+  "offsetMs": 0,
+  "bpm": [
+    { "t": [0,0,1], "bpm": 120 }
+  ],
+  "meter": [
+    { "t": [0,0,1], "num": 4, "den": 4 }
+  ],
+  "notes": [
+    { "type": "tap", "t": [4,0,1], "lane": 0 },
+    { "type": "tap", "t": [5,0,1], "lane": 1 },
+    { "type": "tap", "t": [6,0,1], "lane": 2 },
+    { "type": "tap", "t": [7,0,1], "lane": 3 },
+    { "type": "hold", "t": [8,0,1], "end": [10,0,1], "lane": 1 },
+    { "type": "tap", "t": [11,0,1], "lane": 2 },
+    { "type": "tap", "t": [12,0,1], "lane": 3 },
+    { "type": "tap", "t": [13,0,1], "lane": 2 },
+    { "type": "tap", "t": [14,0,1], "lane": 1 },
+    { "type": "tap", "t": [15,0,1], "lane": 0 },
+    { "type": "hold", "t": [16,0,1], "end": [18,0,1], "lane": 3 },
+    { "type": "tap", "t": [17,0,1], "lane": 0 },
+    { "type": "tap", "t": [18,0,1], "lane": 3 },
+    { "type": "tap", "t": [20,0,1], "lane": 0 },
+    { "type": "tap", "t": [20,0,1], "lane": 3 }
+  ]
+}

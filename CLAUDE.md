@@ -2,8 +2,8 @@
 
 Hexium is a Fabric rhythm game mod for Minecraft 26.3 (Kotlin, Java 25): a 4-lane keyboard
 track plus a mouse-aimed sky screen, with an in-game editor and online charts.
-It is client-only. The project is at Milestone 0 (set-up done); see the roadmap in
-docs/DESIGN.md.
+It is client-only. Milestone 3 (sky layer) has passed its gate, so the project is at
+Milestone 4 (content loop); see the roadmap in docs/DESIGN.md.
 
 ## Working with me
 - Before any non-trivial task, ask clarifying questions about the idea and design
@@ -12,7 +12,8 @@ docs/DESIGN.md.
 - Keep changes scoped to one task. Summarize what changed and why at the end.
 
 ## Read first
-- docs/DESIGN.md (what Hexium is), docs/JUDGEMENT.md, docs/CHART_FORMAT.md (the specs),
+- docs/DESIGN.md (what Hexium is), docs/JUDGEMENT.md, docs/CHART_FORMAT.md,
+  docs/REPLAY_FORMAT.md (the specs),
   docs/ARCHITECTURE.md (how the code is built), docs/DEVELOPMENT.md (commands, workflow).
 - Files in docs/ have upper-case names (docs/COMMIT_STRUCTURE.md), as in TownyMenu.
 - README.md faces players (what Hexium is, install, how to play, charts). Never put
@@ -25,7 +26,7 @@ docs/DESIGN.md.
             mixins in src/client/java/net/trilleo/hexium/client/mixin. src/main holds
             only shared constants (net.trilleo.hexium).
 - `server/` online server (Milestone 7), net.trilleo.hexium.server.
-- `tools/`  CLI: chart lint, replay re-judge, net.trilleo.hexium.tools.
+- `tools/`  CLI: chart lint, replay re-judge and dump, net.trilleo.hexium.tools.
 - Versions live in gradle.properties; `mod_version` is the mod's version.
 
 ## Hard rules
@@ -48,7 +49,8 @@ docs/DESIGN.md.
   and Fix, as part of the change (format in docs/RELEASING.md).
 - After EVERY change, check which documents it affects and update them in the
   same change: this file, README.md (player-facing facts), CHANGELOG.md,
-  docs/DESIGN.md, docs/JUDGEMENT.md, docs/CHART_FORMAT.md, docs/DEVELOPMENT.md,
+  docs/DESIGN.md, docs/JUDGEMENT.md, docs/CHART_FORMAT.md, docs/REPLAY_FORMAT.md,
+  docs/DEVELOPMENT.md,
   docs/ARCHITECTURE.md, docs/API.md (server routes, once it exists),
   docs/RELEASING.md, docs/COMMIT_STRUCTURE.md, .claude/agents/*.md and
   .github/workflows/*.yml.
@@ -78,4 +80,5 @@ docs/DESIGN.md.
 - Build + all tests: ./gradlew build
 - Core tests only: ./gradlew :core:test
 - Run client: ./gradlew :mod:runClient
+- Client game tests (opens a game window; tests are in mod/src/gametest): ./gradlew :mod:runClientGameTest
 - Lint charts (from Milestone 1): ./gradlew :tools:run --args="lint docs/examples"

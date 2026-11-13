@@ -21,8 +21,12 @@ Confirmed decisions:
 | Platform | Fabric, Minecraft 26.3, solo play now; multiplayer possibly later |
 | Repo | TriBinary/Hexium; development on a fork, merged by PR (as with TownyMenu) |
 | Judgement | CHUNITHM standard; ground hold = head judgement + ticks, no tail; sky slide = hold click + follow path, ticks only, no head or tail |
+| Slide button | Each slide names its required button (L or R), like sky taps |
+| Flick direction | None: a swipe through a flick from any direction hits it (chosen after the Milestone 3 playtest) |
+| Tick rate | Hold and slide ticks are fixed at 1/4 beat in `JudgementConfig`, not set per chart |
+| Package extension | Chart packages are `.hexium` files |
 
-One caution on aiming: with real camera rotation, the ground track moves on screen whenever the player turns. Milestone 3 has a readability playtest gate, with a fallback if it fails.
+One caution on aiming: with real camera rotation, the ground track moves on screen whenever the player turns. Milestone 3's readability playtest settled it: on 2026-11-08 real camera rotation was kept, so the hybrid fallback isn't built.
 
 ## Gameplay spec
 
@@ -30,12 +34,12 @@ Everything is judged on one plane: the transparent screen in front of the player
 
 ### Stage geometry (starting values, all tunable)
 
-- The player is locked on the stand spot (the red circle). Movement, jumping, sneaking, hotbar and inventory keys are suppressed during play.
-- Screen plane: 8 blocks in front of the player's eyes, about 12 blocks wide and 6 tall, with its bottom edge on the floor.
-- Ground lanes: 4 lanes lie on the floor and run away from the player past the screen into the distance. Notes spawn far down the lanes and slide toward the bottom edge of the screen.
+- The player is locked on the stand spot (the red circle), on a platform 3 blocks above the floor so the lanes stay readable into the distance, in adventure mode. Movement, jumping, sneaking, hotbar and inventory keys are suppressed during play. The hunger bar is hidden.
+- Screen plane: twice as tall as the player's eyes are high (eyes 4.62 blocks above the floor, so 9.24 tall), 18.48 wide at the judge's 2:1 aspect, with its bottom edge on the floor, so the player's eyes are level with its middle and the rest view looks straight ahead. It stands as far in front of the player as it is tall, 9.24 blocks, so its sides are 45° either side of straight ahead and its top and bottom 26.6° up and down.
+- Ground lanes: 4 lanes, each 4.62 blocks wide so the track matches the screen's width, lie on the floor, starting just in front of the platform and running past the screen, 64 blocks beyond it, into the distance. Notes spawn far down the lanes and slide toward the bottom edge of the screen.
 - Sky notes: they fly straight toward the screen along the depth axis, visible through it, and are judged when they reach their (x, y) spot on the screen.
-- Note speed ("HiSpeed") is a player setting. It changes how far away notes appear, never their timing.
-- Rest view: centred on the screen with the whole ground track visible. Yaw and pitch are clamped to the screen's edges plus a small margin, so the player can't spin away.
+- Note speed ("HiSpeed") is a player setting in blocks per second, 25 by default. It changes how far away notes appear, never their timing.
+- Rest view: centred on the screen with the judgement line and the track ahead of it fully visible. Yaw and pitch are clamped to the screen's edges plus a small margin (1.54 blocks), so the player can't spin away.
 
 ### Note types
 
@@ -46,7 +50,7 @@ Everything is judged on one plane: the transparent screen in front of the player
 | Sky | Tap (L) | Aim at it, left click | Click time + crosshair inside the hit area |
 | Sky | Tap (R) | Aim at it, right click | Click time + crosshair inside the hit area |
 | Sky | Slide | Hold the click button and keep the crosshair on the moving path | Ticks along the path; no head or tail (add a sky tap at the head if needed) |
-| Sky | Flick | Swipe the crosshair through it, no click | Crossing time + swipe speed (+ optional direction) |
+| Sky | Flick | Swipe the crosshair through it from any direction, no click | Crossing time + swipe speed |
 
 ### Input rules
 
@@ -54,7 +58,7 @@ Everything is judged on one plane: the transparent screen in front of the player
 - A sky tap pressed with the wrong button is ignored by that note. It neither hits nor breaks it.
 - One press resolves at most one note: the earliest unjudged note in range, by timing.
 - Mouse sensitivity during play is the mod's own setting. It applies on top of Minecraft's raw mouse input, so menu feel doesn't change.
-- Pause (Esc) pauses the audio and the clock together. Resuming has a 3-second countdown with the notes rewound a little, as most rhythm games do.
+- Pause (Esc) pauses the audio and the clock together. Resuming rewinds the song 3 seconds and plays it under a 3-2-1 countdown, as most rhythm games do. Judging reopens exactly at the pause point, and any lane key or mouse button changed in between counts from there. Moving the mouse while paused never counts as a swipe ([REPLAY_FORMAT.md](REPLAY_FORMAT.md)).
 
 ### Aiming with real camera rotation
 
@@ -62,8 +66,8 @@ The aim point is where the camera's look ray meets the screen plane. Because the
 
 - A note's hit area is measured in screen-plane units, so it doesn't depend on FOV.
 - The ground track is drawn in world space, so it stays put in the world while the view moves. Playtest whether it stays readable when you look at the top corners.
-- Optional comfort settings: a lower default FOV for play, and a "view assist" that slowly pulls the camera back to the rest view when no sky notes are near.
-- Fallback if playtests fail: a hybrid where the camera follows a free cursor by only a few degrees. This only touches the input layer, not charts or judgement.
+- Comfort settings, on the pause screen until the settings page: the play's own mouse sensitivity (a percentage on top of vanilla's), a FOV used only during play (70 by default, vanilla's own: the screen is 90° wide, so a lower FOV or a narrow window cuts off its sides), and a "view assist" (off by default, strength 1 to 5) that slowly pulls the camera back to the rest view when no sky note is due within 1.5 seconds or can still be judged. The play FOV replaces FOV effects such as sprinting.
+- Fallback if playtests fail: a hybrid where the camera follows a free cursor by only a few degrees. This only touches the input layer, not charts or judgement. The Milestone 3 playtest kept real camera rotation (2026-11-08), so it stays unbuilt unless later playtests change that.
 
 ## Editor
 
@@ -73,7 +77,7 @@ The editor runs inside the same stage, with the real renderer. Charters see exac
 
 - **Bottom panel (2D):** a horizontal timeline with a waveform, beat grid, and lanes for ground notes and sky notes. Scroll wheel moves through time, Ctrl+scroll zooms.
 - **3D view (top):** the live stage. Sky notes are placed and moved by aiming the crosshair at the screen and clicking, the same way they're played. Slide points are added by aiming, one point per grid step.
-- **Side panel:** properties of the selected note (time, lane, x, y, button, size, direction, ease).
+- **Side panel:** properties of the selected note (time, lane, x, y, button, size, ease).
 
 ### Tools
 
@@ -151,9 +155,9 @@ Ten milestones, each ending in a gate you check yourself. The first playable bui
 
 Gameplay runs along the top row and content and release along the bottom row. Online work starts after the core engine and joins at release.
 
-1. **M0 Foundations.** Repo, CI, `CLAUDE.md`, subagents, `docs/JUDGEMENT.md`, `docs/CHART_FORMAT.md`, three hand-written example charts.
+1. **M0 Foundations.** Repo, CI, `CLAUDE.md`, subagents, `docs/JUDGEMENT.md`, `docs/CHART_FORMAT.md`.
    - Gate: you've read and approved both specs.
-2. **M1 Core engine** (`core-engineer`). Chart model, parser and validator; timing map; judge for all six note types; scoring; replay format; `tools` CLI (lint, re-judge).
+2. **M1 Core engine** (`core-engineer`). Chart model, parser and validator; three hand-written example charts; timing map; judge for all five note types; scoring; replay format; `tools` CLI (lint, re-judge, dump).
    - Gate: every rule in the judgement spec has a test; golden replays pass.
 3. **M2 Ground prototype** (`fabric-client`). Title button and menu; session gating; stage world loading; player lock; audio clock; ground tap and hold rendering; key input; combo and judgement HUD; results screen; offset calibration; debug overlay.
    - Gate: playtest. Timing feels tight, nothing drifts over a 3-minute song, and vanilla worlds are untouched.
@@ -192,7 +196,4 @@ The biggest risk is the gameplay feel of real camera rotation. It's tested in Mi
 
 1. **Offline-launcher players:** let them play everything except leaderboards and uploads? Or add your own website accounts as a second login method?
 2. **Life gauge:** none in v1 (score and lamps only). Do you want a CHUNITHM-style clear gauge later?
-3. **Slide button:** do slides say which button to hold (L or R, like sky taps, as in the format above), or can either button work?
-4. **Hold and slide tick rate:** 1/4 beat by default. Should it be per chart or fixed?
-5. **Speed changes:** mid-song note speed changes ("soflan") are left out of format v1. Do you want them in v2?
-6. **Chart file extension:** chart packages use .hexium in this guide. Keep it, or pick something shorter?
+3. **Speed changes:** mid-song note speed changes ("soflan") are left out of format v1. Do you want them in v2?

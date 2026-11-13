@@ -1,0 +1,11 @@
+{
+	"schemaVersion": 1,
+	"id": "hexium_gametest",
+	"version": "1",
+	"environment": "client",
+	"entrypoints": {
+		"fabric-client-gametest": [
+			"net.trilleo.hexium.gametest.HexiumClientGameTest"
+		]
+	}
+}

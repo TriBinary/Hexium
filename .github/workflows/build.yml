@@ -20,19 +20,45 @@ jobs:
         run: chmod +x ./gradlew
       - name: build and test
         run: ./gradlew build
+      - name: lint example charts
+        run: ./gradlew :tools:run --args="lint docs/examples"
       - name: capture mod jar
         uses: actions/upload-artifact@v7
         with:
           name: hexium-dev-build
           path: mod/build/libs/
 
-  # Turn on from M2, once client game tests exist. Check the task name
-  # Loom creates for client game tests in the 26.3 toolchain.
-  # client-gametest:
-  #   runs-on: ubuntu-24.04
-  #   steps:
-  #     - uses: actions/checkout@v6
-  #     - uses: actions/setup-java@v5
-  #       with: { java-version: '25', distribution: 'microsoft' }
-  #     - run: chmod +x ./gradlew
-  #     - run: xvfb-run -a ./gradlew :mod:runClientGameTest
+  # Runs the game itself on a virtual display with a fake audio device. It
+  # hasn't passed on a CI machine yet, and a slow software renderer may upset
+  # its timing, so it can't fail the build until it has proved reliable.
+  client-gametest:
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    timeout-minutes: 30
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+      - name: validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6
+      - name: setup jdk
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'microsoft'
+      - name: install virtual display
+        run: sudo apt-get update && sudo apt-get install -y xvfb xauth libgl1 libglx-mesa0 libgl1-mesa-dri libx11-6 libxext6 libxcursor1 libxi6 libxrandr2 libxfixes3 libxss1
+      - name: make gradle wrapper executable
+        run: chmod +x ./gradlew
+      - name: run client game tests
+        run: xvfb-run -a ./gradlew :mod:runClientGameTest
+        env:
+          ALSOFT_DRIVERS: 'null'
+      - name: keep screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: hexium-gametest-output
+          path: |
+            mod/build/run/clientGameTest/screenshots/
+            mod/build/run/clientGameTest/crash-reports/
+            mod/build/run/clientGameTest/logs/
